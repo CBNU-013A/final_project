@@ -84,7 +84,7 @@ class _ProfilepageState extends State<Profilepage> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              userEmail.isNotEmpty ? '@$userEmail' : '@unknown',
+              userEmail.isNotEmpty ? userEmail : '@unknown',
               style: const TextStyle(color: Colors.grey),
             ),
 

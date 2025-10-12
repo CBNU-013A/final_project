@@ -107,12 +107,14 @@ class _FeaturesPageState extends State<FeaturesPage> {
       // 1. features POST (배열로 전달)
       final response = await http.post(
         Uri.parse(
-        'http://localhost:8001/api/users/$userId/keyword-preferences'),
+            'http://localhost:8001/api/users/$userId/keyword-preferences'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({"keywordPreferences": orderedSelections}), // key를 keywordPreferences로 변경
+        body: jsonEncode({
+          "keywordPreferences": orderedSelections
+        }), // key를 keywordPreferences로 변경
       );
       debugPrint('Features POST status: ${response.statusCode}');
       debugPrint('Features POST response: ${response.body}');
@@ -206,7 +208,7 @@ class _FeaturesPageState extends State<FeaturesPage> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.grey))
           : Column(
               children: [
                 Padding(

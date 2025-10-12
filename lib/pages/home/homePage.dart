@@ -93,7 +93,7 @@ class HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       //const SizedBox(height: 20.0),
-                      // ... 님의 주요 여행 취향
+                      // ... 님의 주요 여행 취향r
                      // ShowPreferences(userName: userName, userId: userId),
                       const SizedBox(height: 20),
                       // 어디로 떠날까요?

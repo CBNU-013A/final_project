@@ -116,7 +116,7 @@ class ReviewService {
     );
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      final List<dynamic> reviews = data['reviews'];
+      final List<dynamic> reviews = data['reviews'].reversed.toList();
 
       return reviews.map<Map<String, String>>((review) {
         final content = review['content'] ?? '';

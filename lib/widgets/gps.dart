@@ -1,3 +1,4 @@
+// widgets/gps.dart
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; //위도 경도 가져옴
 import 'package:geocoding/geocoding.dart';
@@ -75,7 +76,7 @@ class _CurrentAddressWidgetState extends State<CurrentAddressWidget> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.grey));
     } else {
       debugPrint(_currentAddress);
       return Text(

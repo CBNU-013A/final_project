@@ -258,7 +258,7 @@ class RecommendState extends State<Recommend> {
         children: [
           if (isLoading)
             const Center(
-              child: CircularProgressIndicator(color: Colors.blueGrey),
+              child: CircularProgressIndicator(color: Colors.grey),
             )
           else if (hasLikes) ...[
             Text(
@@ -268,10 +268,28 @@ class RecommendState extends State<Recommend> {
             ),
             const SizedBox(height: 10),
             if (_recommendations == null || _recommendations!.isEmpty)
-              const Center(
-                child: Text(
-                  "추천된 여행지가 아직 없습니다.",
-                  style: TextStyle(color: Colors.grey),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Icon(
+                      //   Icons.location_off_outlined,
+                      //   size: 48,
+                      //   color: Colors.grey[400],
+                      // ),
+                      // const SizedBox(height: 12),
+                      Text(
+                        "추천된 여행지가 없어요.",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else
@@ -525,7 +543,9 @@ class _SquareImage extends StatelessWidget {
         return SizedBox(
           height: size,
           width: size,
-          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          child: const Center(
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.grey)),
         );
       },
       errorBuilder: (context, error, stackTrace) => _placeholder(),

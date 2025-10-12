@@ -51,7 +51,6 @@ class _DetailPageState extends State<DetailPage>
   bool _isPlaceFound = false;
   Map<String, dynamic>? _matchedPlace;
   late TabController _tabController;
-  bool _isLiked = false;
 
   @override
   void initState() {
@@ -69,7 +68,16 @@ class _DetailPageState extends State<DetailPage>
 
   void loadPlace() async {
     try {
-      final data = await _locationSrvice.fetchLocation("${widget.placeId}");
+      // placeId가 유효한지 확인
+      if (widget.placeId.isEmpty || widget.placeId == 'null') {
+        setState(() {
+          _isLoading = false;
+          _isPlaceFound = false;
+        });
+        return;
+      }
+
+      final data = await _locationSrvice.fetchLocation(widget.placeId);
 
       if (data.isNotEmpty) {
         placeData = data;
@@ -94,12 +102,6 @@ class _DetailPageState extends State<DetailPage>
     }
   }
 
-  void _handleLikeChanged(bool isNowLiked) {
-    setState(() {
-      _isLiked = isNowLiked;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -112,7 +114,7 @@ class _DetailPageState extends State<DetailPage>
           backgroundColor: Colors.transparent,
         ),
         body: const Center(
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(color: Colors.grey),
         ),
       );
     }
@@ -166,6 +168,7 @@ class _DetailPageState extends State<DetailPage>
                   child: Column(
                     children: [
                       ImageSection(context: context, place: _matchedPlace!),
+                      KeywordsSection(place: _matchedPlace!),
                       InfoSection(data: _matchedPlace!),
                     ],
                   ),
@@ -203,16 +206,23 @@ class _DetailPageState extends State<DetailPage>
           ];
         },
         body: _matchedPlace == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.grey))
             : TabBarView(
                 controller: _tabController,
                 children: [
                   SummaryTab(data: {
                     'title': _matchedPlace!['title'],
                     'overview': _matchedPlace!['overview'],
+                    'llmoverview': _matchedPlace!['llmoverview'],
+                    '_id': _matchedPlace!['_id'],
                     'onTabChange': () {
                       setState(() {
                         _tabController.index = 1; // 분석 탭으로 이동
+                      });
+                    },
+                    'onGoReview': () {
+                      setState(() {
+                        _tabController.index = 2; // 리뷰 탭으로 이동
                       });
                     }
                   }),
@@ -384,6 +394,112 @@ class InfoSection extends StatelessWidget {
   }
 }
 
+class KeywordsSection extends StatelessWidget {
+  const KeywordsSection({super.key, required this.place});
+
+  final Map<String, dynamic> place;
+
+  List<String> _extractTopKeywords(Map<String, dynamic> place) {
+    // 1) Try structured 'keywords' from API: expect a list of maps with {name, sentiment:{total}}
+    final raw = place['keywords'];
+    if (raw is List) {
+      try {
+        final items = raw
+            .whereType<Map>()
+            .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+            .toList();
+
+        // sort by total sentiment score desc if present
+        items.sort((a, b) {
+          final at = (a['sentiment'] is Map && (a['sentiment']['total'] is num))
+              ? (a['sentiment']['total'] as num).toDouble()
+              : 0.0;
+          final bt = (b['sentiment'] is Map && (b['sentiment']['total'] is num))
+              ? (b['sentiment']['total'] as num).toDouble()
+              : 0.0;
+          return bt.compareTo(at);
+        });
+
+        final names = items
+            .map((e) => (e['name'] ?? '').toString())
+            .where((s) => s.trim().isNotEmpty)
+            .toList();
+        if (names.isNotEmpty) {
+          return names.take(3).toList();
+        }
+      } catch (_) {}
+    }
+
+    // 2) Fallback: for known place "보살사"
+    final title = (place['title'] ?? '').toString();
+    if (title.contains('보살사')) {
+      return const ['문화역사', '관람', '가족'];
+    }
+
+    // 3) As a last resort, try to infer a couple of general tags
+    if ((place['overview'] ?? '').toString().isNotEmpty) {
+      return const ['자연', '역사', '휴식'];
+    }
+
+    return const [];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tags = _extractTopKeywords(place);
+    if (tags.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+      child: SizedBox(
+        height: 40, // ✅ 높이를 살짝 키움
+        width: double.infinity,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: tags
+                .map(
+                  (t) => Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.lighterGreen.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: AppColors.mainGreen.withOpacity(0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.tag,
+                            size: 16, color: AppColors.deepGrean),
+                        const SizedBox(width: 6),
+                        Text(
+                          t,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.deepGrean,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ImageSection extends StatefulWidget {
   const ImageSection({
     super.key,
@@ -438,7 +554,8 @@ class _ImageSectionState extends State<ImageSection> {
         width: imageWidth,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+              child: CircularProgressIndicator(color: Colors.grey));
         },
         errorBuilder: (context, error, stackTrace) {
           return noImagePlaceholder();

@@ -1,3 +1,4 @@
+// widgets/like_button.dart
 import 'package:flutter/material.dart';
 import 'package:final_project/services/like_service.dart';
 
@@ -67,7 +68,7 @@ class _LikeButtonState extends State<LikeButton> {
       return const SizedBox(
         width: 48,
         height: 48,
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: CircularProgressIndicator(color: Colors.grey)),
       );
     }
 

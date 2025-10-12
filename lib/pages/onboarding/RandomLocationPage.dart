@@ -1,5 +1,6 @@
 // pages/onboarding/RandomLocationPage.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/random_location_service.dart';
 import '../../services/like_service.dart';
@@ -137,15 +138,15 @@ class _RandomLocationPageState extends State<RandomLocationPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  "완료",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                // const Text(
+                //   "완료",
+                //   style: TextStyle(
+                //     fontSize: 20,
+                //     fontWeight: FontWeight.bold,
+                //     color: Colors.black87,
+                //   ),
+                //   textAlign: TextAlign.center,
+                // ),
                 const SizedBox(height: 12),
                 const Text(
                   "관심있는 여행지 선택이 완료되었습니다!\n홈 화면으로 이동합니다.",
@@ -199,7 +200,11 @@ class _RandomLocationPageState extends State<RandomLocationPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxStyles.backgroundBox(),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -231,6 +236,7 @@ class _RandomLocationPageState extends State<RandomLocationPage> {
                           return const Center(
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
+                              color: Colors.grey,
                             ),
                           );
                         },
@@ -306,140 +312,171 @@ class _RandomLocationPageState extends State<RandomLocationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.lighterGreen,
-      appBar: AppBar(
-        backgroundColor: AppColors.lighterGreen,
-        elevation: 0,
-        automaticallyImplyLeading: false, // 뒤로가기 버튼 제거
-        title: Text(
-          '관심 있는 장소를 선택해주세요',
-          style: TextStyle(
-            fontSize: 18,
-            color: AppColors.deepGrean,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: _fetchRandomLocations,
-            icon: Icon(
-              Icons.refresh,
-              color: AppColors.deepGrean,
-            ),
-            tooltip: '새로고침',
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      body: SafeArea(
-        child: isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.mainGreen,
-                ),
-              )
-            : randomLocations.isEmpty && likedPlaces.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.location_off,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '랜덤 장소를 불러올 수 없습니다',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _skipToHome,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.mainGreen,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('완료'),
-                        ),
-                      ],
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        extendBodyBehindAppBar: false,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          elevation: 0,
+          automaticallyImplyLeading: false, // 뒤로가기 버튼 제거
+          title: Text(
+            '관심 있는 장소를 선택해주세요',
+            style: TextStyle(
+              fontSize: 18,
+              color: AppColors.deepGrean,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              onPressed: _fetchRandomLocations,
+              icon: Icon(
+                Icons.refresh,
+                color: AppColors.deepGrean,
+              ),
+              tooltip: '새로고침',
+            ),
+          ],
+        ),
+        body: Container(
+          color: Colors.white,
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: isLoading
+                ? Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.grey,
+                      ),
                     ),
                   )
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          '마음에 드는 장소에 좋아요를 눌러주세요!\n나중에 추천에 도움이 됩니다.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[800],
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount:
-                              likedPlaces.length + randomLocations.length,
-                          itemBuilder: (context, index) {
-                            // 좋아요한 장소들을 먼저 표시
-                            if (index < likedPlaces.length) {
-                              return _buildLocationCard(
-                                  likedPlaces[index], true);
-                            } else {
-                              // 그 다음에 랜덤 장소들 표시
-                              final location =
-                                  randomLocations[index - likedPlaces.length];
-                              final placeId =
-                                  location['_id'] ?? location['id'] ?? '';
-                              final isLiked = likedLocations.contains(placeId);
-                              return _buildLocationCard(location, isLiked);
-                            }
-                          },
-                        ),
-                      ),
-                      // 완료 버튼
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _skipToHome,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.mainGreen,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                : randomLocations.isEmpty && likedPlaces.isEmpty
+                    ? Container(
+                        color: Colors.white,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.location_off,
+                                size: 64,
+                                color: Colors.grey[400],
                               ),
-                            ),
-                            child: Text(
-                              '완료 (${likedLocations.length}개 선택됨)',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                              const SizedBox(height: 16),
+                              Text(
+                                '랜덤 장소를 불러올 수 없습니다',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 24),
+                              ElevatedButton(
+                                onPressed: _skipToHome,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.mainGreen,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text('완료'),
+                              ),
+                            ],
                           ),
                         ),
+                      )
+                    : Container(
+                        color: Colors.white,
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                '마음에 드는 장소에 좋아요를 눌러주세요!\n나중에 추천에 도움이 됩니다.',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount:
+                                    likedPlaces.length + randomLocations.length,
+                                itemBuilder: (context, index) {
+                                  // 좋아요한 장소들을 먼저 표시
+                                  if (index < likedPlaces.length) {
+                                    return _buildLocationCard(
+                                        likedPlaces[index], true);
+                                  } else {
+                                    // 그 다음에 랜덤 장소들 표시
+                                    final location = randomLocations[
+                                        index - likedPlaces.length];
+                                    final placeId =
+                                        location['_id'] ?? location['id'] ?? '';
+                                    final isLiked =
+                                        likedLocations.contains(placeId);
+                                    return _buildLocationCard(
+                                        location, isLiked);
+                                  }
+                                },
+                              ),
+                            ),
+                            // 완료 버튼
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              color: Colors.white,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _skipToHome,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.mainGreen,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 13),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '완료 (${likedLocations.length}개 선택됨)',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+          ),
+        ),
       ),
     );
   }

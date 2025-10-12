@@ -275,7 +275,9 @@ class _SetactivitypageState extends State<Setactivitypage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: keywords.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.grey))
                         : Wrap(
                             alignment: WrapAlignment.center,
                             spacing: 10,

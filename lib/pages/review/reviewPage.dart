@@ -53,7 +53,7 @@ class _ReviewWidgetState extends State<ReviewWidget> {
   @override
   Widget build(BuildContext context) {
     return _matchedPlace == null
-        ? const Center(child: CircularProgressIndicator())
+        ? const Center(child: CircularProgressIndicator(color: Colors.grey))
         : SingleChildScrollView(
             padding: const EdgeInsets.all(0),
             child: Column(

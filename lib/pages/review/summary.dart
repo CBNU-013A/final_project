@@ -135,7 +135,7 @@ class _SummaryWidgetState extends State<SummaryWidget> {
   @override
   Widget build(BuildContext context) {
     return place.isEmpty
-        ? const Center(child: CircularProgressIndicator())
+        ? const Center(child: CircularProgressIndicator(color: Colors.grey))
         : _buildSummarySection(place);
   }
 }

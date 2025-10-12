@@ -95,7 +95,7 @@ class RecentSearchState extends State<RecentSearch> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.grey));
     }
 
     return Container(
@@ -121,34 +121,26 @@ class RecentSearchState extends State<RecentSearch> {
         ),
         const SizedBox(height: 8),
         if (recentsearches.isEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // const Icon(Icons.search_off, size: 36, color: Colors.grey),
-                  // const SizedBox(height: 8),
-                  const Text(
-                    "최근 검색 기록이 없어요",
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 12),
-                  // ElevatedButton(
-                  //   onPressed: () {
-                  //     Navigator.pushNamed(context, '/search');
-                  //   },
-                  //   style: ElevatedButton.styleFrom(
-                  //     backgroundColor: AppColors.mainGreen,
-                  //     foregroundColor: Colors.white,
-                  //     padding: const EdgeInsets.symmetric(
-                  //         horizontal: 20, vertical: 10),
-                  //     shape: RoundedRectangleBorder(
-                  //       borderRadius: BorderRadius.circular(8),
-                  //     ),
-                  //   ),
-                  //   child: const Text("검색하러 가기"),
+                  // Icon(
+                  //   Icons.history_outlined,
+                  //   size: 48,
+                  //   color: Colors.grey[400],
                   // ),
+                  // const SizedBox(height: 12),
+                  Text(
+                    "최근 검색 기록이 없어요",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),

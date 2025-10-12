@@ -173,7 +173,9 @@ class _SetwithpageState extends State<Setwithpage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: keywords.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.grey))
                         : Wrap(
                             alignment: WrapAlignment.center,
                             spacing: 16,

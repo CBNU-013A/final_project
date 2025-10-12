@@ -1,5 +1,4 @@
 // widgets/profile/MyLocationContainer.dart
-import 'package:final_project/pages/location/DetailPage.dart';
 import 'package:final_project/services/like_service.dart';
 import 'package:final_project/services/location_service.dart';
 import 'package:final_project/styles/styles.dart';
@@ -7,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 
 class MyLocationContainer extends StatefulWidget {
   const MyLocationContainer({super.key});
@@ -27,6 +27,7 @@ class _MyLocationContainerState extends State<MyLocationContainer> {
   bool _showDetail = false;
   String? _currentAddress;
   bool _isLoading = true;
+  Position? _currentPosition;
 
   @override
   void initState() {
@@ -45,12 +46,14 @@ class _MyLocationContainerState extends State<MyLocationContainer> {
         Placemark place = placemarks.first;
 
         setState(() {
+          _currentPosition = position;
           _currentAddress =
               '${place.street}, ${place.locality}, ${place.administrativeArea} ${place.country}';
           _isLoading = false;
         });
       } else {
         setState(() {
+          _currentPosition = position;
           _currentAddress = '주소 정보를 찾을 수 없습니다.';
           _isLoading = false;
         });
@@ -186,39 +189,74 @@ class _MyLocationContainerState extends State<MyLocationContainer> {
           ),
           if (_showDetail)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              padding: const EdgeInsets.all(12.0),
               child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.lighterGreen.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.mainGreen.withOpacity(0.1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          leading: const Icon(
-                            Icons.place_outlined,
-                            color: AppColors.mainGreen,
-                            size: 18,
+                  ? const CircularProgressIndicator(color: Colors.grey)
+                  : Column(
+                      children: [
+                        // 주소 정보
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.lighterGreen.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.mainGreen.withOpacity(0.1),
+                              width: 1,
+                            ),
                           ),
-                          title: Text(
-                            _currentAddress ?? '주소 없음',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 1),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 2, vertical: 1),
+                              leading: const Icon(
+                                Icons.place_outlined,
+                                color: AppColors.mainGreen,
+                                size: 18,
+                              ),
+                              title: Text(
+                                _currentAddress ?? '주소 없음',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        // 지도
+                        if (_currentPosition != null)
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: Colors.grey.shade300, width: 1),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: KakaoMap(
+                              center: LatLng(_currentPosition!.latitude,
+                                  _currentPosition!.longitude),
+                              currentLevel: 4,
+                              onMapCreated:
+                                  (KakaoMapController controller) async {
+                                await controller.addMarker(markers: [
+                                  Marker(
+                                    width: 24,
+                                    height: 30,
+                                    markerId: 'my_location',
+                                    latLng: LatLng(_currentPosition!.latitude,
+                                        _currentPosition!.longitude),
+                                    infoWindowContent: '내 위치',
+                                  ),
+                                ]);
+                              },
+                            ),
+                          ),
+                      ],
                     ),
             )
         ],

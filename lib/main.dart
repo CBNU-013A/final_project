@@ -40,7 +40,8 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  Widget _startScreen = const CircularProgressIndicator(); // 로딩 UI
+  Widget _startScreen =
+      const CircularProgressIndicator(color: Colors.grey); // 로딩 UI
 
   @override
   void initState() {
@@ -132,6 +133,7 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ],
 
       debugShowCheckedModeBanner: false,
+      debugShowMaterialGrid: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'Pretendard',

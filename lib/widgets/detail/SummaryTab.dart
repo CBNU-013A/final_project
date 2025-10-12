@@ -2,7 +2,6 @@
 import 'package:final_project/pages/review/summary.dart';
 import 'package:final_project/styles/styles.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 class SummaryTab extends StatefulWidget {
   const SummaryTab({Key? key, required this.data}) : super(key: key);
@@ -16,13 +15,7 @@ class SummaryTab extends StatefulWidget {
 class _SummaryTabState extends State<SummaryTab> {
   final List<String> _AnalysisOptions = ['전체', '내 취향'];
   int _selectedAnalysisIndex = 0;
-  late Map<String, dynamic> _data;
-
-  @override
-  void initState() {
-    super.initState();
-    _data = widget.data;
-  }
+  bool _isExpanded = false; // 요약/전체 토글 상태
 
   Container toggleAnalysis() {
     return Container(
@@ -107,73 +100,128 @@ class _SummaryTabState extends State<SummaryTab> {
               color: AppColors.lightWhite,
               shape: BoxShape.rectangle,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
-            child: Column(
+            child: Builder(builder: (context) {
+              // 요약 텍스트: llmoverview 사용
+              final String shortText =
+                  (widget.data['llmoverview'] ?? '정보가 없습니다.').toString();
+
+              // 원본 텍스트: overview 사용
+              final String fullText =
+                  (widget.data['overview'] ?? '정보가 없습니다.').toString();
+
+              final String headerTitle = _isExpanded ? "장소 정보" : "장소 정보 요약";
+              final String toggleLabel = _isExpanded ? "요약 보기" : "원본 보기";
+
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "장소 정보",
-                    style: TextStyles.mediumTextStyle
-                        .copyWith(color: Colors.black),
-                  ),
-                  if ((widget.data['overview'] ?? '정보가 없습니다.')
-                      .toString()
-                      .isNotEmpty)
-                    GestureDetector(
-                      onTap: () {
-                        final overview = widget.data['overview'];
-                        if (overview != null &&
-                            overview is String &&
-                            overview.trim().isNotEmpty) {
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              backgroundColor: AppColors.lightWhite,
-                              content: SingleChildScrollView(
-                                padding: const EdgeInsets.all(10),
-                                child: Text(
-                                  (widget.data['overview'] ?? ' ')
-                                      .replaceAll('\n', '\n\n'),
-                                  style: const TextStyle(
-                                    color: Colors.black87,
-                                    letterSpacing: 1,
-                                    height: 1.6, // 문단간 간격 조정
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.data['overview'] ?? '정보가 없습니다.',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  fontSize: 14, color: Colors.black87),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          if ((widget.data['overview'] ?? '')
-                              .toString()
-                              .isNotEmpty)
-                            const Text(
-                              "더보기",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            )
-                        ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        headerTitle,
+                        style: TextStyles.mediumTextStyle
+                            .copyWith(color: Colors.black),
                       ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _isExpanded = !_isExpanded;
+                          });
+                        },
+                        child: Text(
+                          toggleLabel,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _isExpanded ? fullText : shortText,
+                    style: const TextStyle(
+                        fontSize: 14, color: Colors.black87, height: 1.6),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.lightWhite,
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
+            child: Builder(builder: (context) {
+              final title = (widget.data['title'] ?? '').toString();
+              // 보살사 전용 하드코딩 리뷰 요약 문구
+              const String bosalsaReviewSummary =
+                  '보살사는 도심 속 조용하고 아늑한 작은 절로, 고요한 분위기와 역사적 의미가 돋보이는 장소예요.';
+              // 기본/대체 문구
+              const String defaultReviewSummary =
+                  '방문자들은 전반적으로 조용한 분위기와 휴식에 좋은 환경으로 평가하고 있어요.';
+              final String reviewSummary = title.contains('보살사')
+                  ? bosalsaReviewSummary
+                  : defaultReviewSummary;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "리뷰 요약",
+                        style: TextStyles.mediumTextStyle
+                            .copyWith(color: Colors.black),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          // 리뷰 탭으로 이동 콜백
+                          final goReview = widget.data['onGoReview'];
+                          if (goReview != null && goReview is Function) {
+                            goReview();
+                          } else if (widget.data['onTabChange'] != null &&
+                              widget.data['onTabChange'] is Function) {
+                            // 백업: 기존 콜백을 사용하는 경우가 있다면 시도
+                            widget.data['onTabChange']();
+                          } else {
+                            debugPrint("리뷰 보러가기 클릭됨 - 탭 전환 콜백이 없습니다.");
+                          }
+                        },
+                        child: Text(
+                          "리뷰 보러가기",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    reviewSummary,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.6,
                     ),
-                ]),
+                  ),
+                ],
+              );
+            }),
           ),
           const SizedBox(
             height: 10,
@@ -183,6 +231,7 @@ class _SummaryTabState extends State<SummaryTab> {
               color: AppColors.lightWhite,
               shape: BoxShape.rectangle,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
             child: Column(

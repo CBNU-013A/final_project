@@ -149,13 +149,12 @@ class _MyReviewContainerState extends State<MyReviewContainer> {
               itemCount: reviews.length,
               itemBuilder: (context, index) {
                 final review = reviews[index];
-                final reviewId = review['id'] ?? '';
                 final content = review['content'] ?? '';
                 final location = review['location'] ?? '알 수 없음';
                 final locationId = review['locationId'] ?? '';
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(vertical: 3.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.lighterGreen.withOpacity(0.3),
@@ -179,34 +178,36 @@ class _MyReviewContainerState extends State<MyReviewContainer> {
                           MaterialPageRoute(
                             builder: (context) => DetailPage(
                               placeName: location,
-                              placeId: review['locationId'],
+                              placeId: locationId,
                             ),
                           ),
                         );
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                            horizontal: 8, vertical: 4),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 4),
+                              horizontal: 4, vertical: 0),
+                          minVerticalPadding: 0,
+                          dense: true,
                           title: Text(
                             content,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              height: 1.4,
+                              height: 1.3,
                               color: Colors.black87,
                             ),
                           ),
                           subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
+                            padding: const EdgeInsets.only(top: 4.0),
                             child: Row(
                               children: [
                                 const Icon(
                                   Icons.place_outlined,
                                   color: AppColors.mainGreen,
-                                  size: 16,
+                                  size: 14,
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
@@ -226,7 +227,9 @@ class _MyReviewContainerState extends State<MyReviewContainer> {
                           trailing: IconButton(
                             tooltip: '삭제',
                             icon: const Icon(Icons.delete_outline,
-                                color: Colors.grey),
+                                color: Colors.grey, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
                                 context: context,

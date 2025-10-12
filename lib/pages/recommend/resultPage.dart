@@ -91,7 +91,7 @@ class _ResultPageState extends State<ResultPage> {
           iconTheme: const IconThemeData(color: AppColors.deepGrean),
         ),
         body: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.grey))
             : SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -151,12 +151,24 @@ class _ResultPageState extends State<ResultPage> {
                       const SizedBox(height: 20),
                       ...recommendations.map((rec) => GestureDetector(
                             onTap: () {
+                              final placeId = rec['id'] ?? rec['_id'] ?? '';
+                              final placeName = rec['title'] ?? '제목 없음';
+
+                              if (placeId.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("❌ 장소 정보를 불러올 수 없습니다."),
+                                  ),
+                                );
+                                return;
+                              }
+
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) => DetailPage(
-                                            placeId: rec['id'],
-                                            placeName: rec['title'],
+                                            placeId: placeId,
+                                            placeName: placeName,
                                           )));
                             },
                             child: Container(
