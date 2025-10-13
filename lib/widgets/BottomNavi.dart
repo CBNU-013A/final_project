@@ -1,9 +1,9 @@
 // widgets/BottomNavi.dart
-import 'package:final_project/pages/home/ProfilePage.dart';
+import 'package:pik/pages/home/ProfilePage.dart';
 import 'package:flutter/material.dart';
 import '../pages/home/HomePage.dart';
 import '../pages/home/SearchPage.dart';
-import 'package:final_project/pages/home/LikePage.dart';
+import 'package:pik/pages/home/LikePage.dart';
 
 class BottomNavi extends StatelessWidget {
   final int currentIndex;

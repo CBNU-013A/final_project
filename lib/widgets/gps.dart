@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; //위도 경도 가져옴
 import 'package:geocoding/geocoding.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/styles/styles.dart';
 
 class CurrentAddressWidget extends StatefulWidget {
   const CurrentAddressWidget({super.key});

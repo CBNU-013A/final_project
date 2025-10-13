@@ -1,17 +1,17 @@
 // pages/home/HomePage.dart
 import 'dart:io';
-import 'package:final_project/widgets/home/ShowPreferences.dart';
-import 'package:final_project/widgets/home/TripPrompt.dart';
+import 'package:pik/widgets/home/ShowPreferences.dart';
+import 'package:pik/widgets/home/TripPrompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/widgets/main_app_bar.dart';
-import 'package:final_project/widgets/home/RecentSearch.dart';
-import 'package:final_project/widgets/BottomNavi.dart';
-import 'package:final_project/widgets/home/Recommend.dart';
-import 'package:final_project/services/user_service.dart';
-import 'package:final_project/pages/auth/loginPage.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/widgets/main_app_bar.dart';
+import 'package:pik/widgets/home/RecentSearch.dart';
+import 'package:pik/widgets/BottomNavi.dart';
+import 'package:pik/widgets/home/Recommend.dart';
+import 'package:pik/services/user_service.dart';
+import 'package:pik/pages/auth/loginPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final String baseUrl = Platform.isAndroid

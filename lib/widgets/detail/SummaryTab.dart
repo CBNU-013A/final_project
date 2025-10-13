@@ -1,6 +1,6 @@
 // widgets/detail/SummaryTab.dart
-import 'package:final_project/pages/review/summary.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/pages/review/summary.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 
 class SummaryTab extends StatefulWidget {

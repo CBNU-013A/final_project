@@ -1,8 +1,8 @@
 // pages/recommend/setTripPage.dart
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/pages/recommend/InteractiveRecommendPage.dart';
-import 'package:final_project/pages/recommend/RecommendHistoryPage.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/pages/home/HomePage.dart';
+import 'package:pik/pages/recommend/InteractiveRecommendPage.dart';
+import 'package:pik/pages/recommend/RecommendHistoryPage.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 
 class setTripPage extends StatefulWidget {

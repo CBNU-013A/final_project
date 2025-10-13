@@ -1,12 +1,12 @@
 // pages/recommend/setFeaturesPage.dart
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/widgets/BottomNavi.dart';
+import 'package:pik/pages/home/HomePage.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/widgets/BottomNavi.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:final_project/pages/recommend/resultPage.dart';
+import 'package:pik/pages/recommend/resultPage.dart';
 
 class FeaturesPage extends StatefulWidget {
   const FeaturesPage({super.key});

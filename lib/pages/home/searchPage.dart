@@ -1,11 +1,11 @@
 // pages/home/SearchPage.dart
 import 'dart:io';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/services/user_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/services/user_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
-import 'package:final_project/widgets/search_bar.dart' as custom;
-import 'package:final_project/pages/location/detailPage.dart';
+import 'package:pik/widgets/search_bar.dart' as custom;
+import 'package:pik/pages/location/detailPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/BottomNavi.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

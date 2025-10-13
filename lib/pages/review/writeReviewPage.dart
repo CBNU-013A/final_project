@@ -1,8 +1,8 @@
 // pages/review/writeReviewPage.dart
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:final_project/services/review_service.dart';
+import 'package:pik/services/review_service.dart';
 
 class WriteReviewPage extends StatefulWidget {
   final String placeId;

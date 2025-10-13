@@ -1,8 +1,8 @@
 // widgets/main_app_bar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/styles/text_styles.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/styles/text_styles.dart';
 
 class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;

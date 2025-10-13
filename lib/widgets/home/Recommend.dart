@@ -1,16 +1,16 @@
 // widgets/home/Recommend.dart
 
 import 'dart:io';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/services/user_service.dart';
-import 'package:final_project/services/random_location_service.dart';
-import 'package:final_project/services/like_service.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/styles/text_styles.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/services/user_service.dart';
+import 'package:pik/services/random_location_service.dart';
+import 'package:pik/services/like_service.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/styles/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:final_project/pages/location/DetailPage.dart';
-import 'package:final_project/pages/onboarding/RandomLocationPage.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/pages/onboarding/RandomLocationPage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final String baseUrl = Platform.isAndroid

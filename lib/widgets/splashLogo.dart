@@ -1,5 +1,5 @@
 // widgets/splashLogo.dart
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter_svg/svg.dart';
 import '../pages/auth/loginPage.dart';
 import '../pages/home/HomePage.dart';

@@ -1,12 +1,12 @@
 // pages/recommend/resultPage.dart
 import 'dart:convert';
-import 'package:final_project/pages/location/DetailPage.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/widgets/BottomNavi.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/widgets/BottomNavi.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:final_project/services/sentiment_service.dart';
+import 'package:pik/services/sentiment_service.dart';
 
 class ResultPage extends StatefulWidget {
   const ResultPage({super.key});

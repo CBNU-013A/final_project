@@ -1,7 +1,7 @@
 // widgets/home/ShowKeywords.dart
 //홈화면에서 키워드 보여주기
-import 'package:final_project/services/user_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/services/user_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

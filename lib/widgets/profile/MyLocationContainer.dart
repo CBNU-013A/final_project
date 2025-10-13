@@ -1,7 +1,7 @@
 // widgets/profile/MyLocationContainer.dart
-import 'package:final_project/services/like_service.dart';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/services/like_service.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';

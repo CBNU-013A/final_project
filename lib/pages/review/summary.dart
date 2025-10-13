@@ -1,7 +1,7 @@
 // pages/review/summary.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:final_project/services/location_service.dart';
+import 'package:pik/services/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../styles/styles.dart';

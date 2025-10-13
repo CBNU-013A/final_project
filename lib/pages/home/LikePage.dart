@@ -1,13 +1,13 @@
 // pages/home/LikePage.dart
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/services/like_service.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/styles/text_styles.dart';
-import 'package:final_project/widgets/BottomNavi.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/services/like_service.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/styles/text_styles.dart';
+import 'package:pik/widgets/BottomNavi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:final_project/pages/location/DetailPage.dart';
+import 'package:pik/pages/location/DetailPage.dart';
 
 class Likepage extends StatefulWidget {
   const Likepage({super.key});

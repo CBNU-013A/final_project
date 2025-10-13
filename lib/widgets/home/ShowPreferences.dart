@@ -1,9 +1,9 @@
 // widgets/home/ShowPreferences.dart
 // 사용자 취향 섹션 위젯 추출
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/styles/text_styles.dart';
-import 'package:final_project/widgets/home/ShowKeywords.dart';
-import 'package:final_project/widgets/home/setKeywordsPage.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/styles/text_styles.dart';
+import 'package:pik/widgets/home/ShowKeywords.dart';
+import 'package:pik/widgets/home/setKeywordsPage.dart';
 import 'package:flutter/material.dart';
 
 class ShowPreferences extends StatefulWidget {

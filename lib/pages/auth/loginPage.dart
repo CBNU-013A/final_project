@@ -1,13 +1,13 @@
 // pages/auth/LoginPage.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:final_project/main.dart';
-import 'package:final_project/services/auth_service.dart';
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/pages/auth/RegisterPage.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/main.dart';
+import 'package:pik/services/auth_service.dart';
+import 'package:pik/pages/home/HomePage.dart';
+import 'package:pik/pages/auth/RegisterPage.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:final_project/pages/onboarding/RandomLocationPage.dart';
+import 'package:pik/pages/onboarding/RandomLocationPage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

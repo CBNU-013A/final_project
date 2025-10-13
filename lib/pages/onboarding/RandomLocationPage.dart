@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/random_location_service.dart';
 import '../../services/like_service.dart';
 import '../../styles/styles.dart';
-import 'package:final_project/pages/home/HomePage.dart';
+import 'package:pik/pages/home/HomePage.dart';
 
 class RandomLocationPage extends StatefulWidget {
   const RandomLocationPage({super.key});

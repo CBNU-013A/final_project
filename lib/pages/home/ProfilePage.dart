@@ -1,10 +1,10 @@
 // pages/home/ProfilePage.dart
-import 'package:final_project/services/auth_service.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/widgets/BottomNavi.dart';
-import 'package:final_project/widgets/profile/MyLikeContainer.dart';
-import 'package:final_project/widgets/profile/MyLocationContainer.dart';
-import 'package:final_project/widgets/profile/MyReviewContainer.dart';
+import 'package:pik/services/auth_service.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/widgets/BottomNavi.dart';
+import 'package:pik/widgets/profile/MyLikeContainer.dart';
+import 'package:pik/widgets/profile/MyLocationContainer.dart';
+import 'package:pik/widgets/profile/MyReviewContainer.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/LoginPage.dart';

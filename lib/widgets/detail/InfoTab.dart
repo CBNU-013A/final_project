@@ -1,11 +1,11 @@
 // widgets/detail/InfoTab.dart
-import 'package:final_project/pages/location/DetailPage.dart';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/services/random_location_service.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/services/random_location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/styles/styles.dart';
 
 class InfoTab extends StatefulWidget {
   final Map<String, dynamic> data;

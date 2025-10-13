@@ -1,4 +1,4 @@
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 
 class MyProfileContainer extends StatefulWidget {

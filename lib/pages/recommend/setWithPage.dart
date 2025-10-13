@@ -1,8 +1,8 @@
 // pages/recommend/setWithPage.dart
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/pages/recommend/setThemePage.dart';
-import 'package:final_project/services/keyword_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/pages/home/HomePage.dart';
+import 'package:pik/pages/recommend/setThemePage.dart';
+import 'package:pik/services/keyword_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';

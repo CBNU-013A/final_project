@@ -1,7 +1,7 @@
 // widgets/home/TripPrompt.dart
-import 'package:final_project/pages/recommend/setTripPage.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/styles/text_styles.dart';
+import 'package:pik/pages/recommend/setTripPage.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/styles/text_styles.dart';
 import 'package:flutter/material.dart';
 
 //어디로 떠날까요? 프롬프트 섹션 위젯 추출

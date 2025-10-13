@@ -1,7 +1,7 @@
 // widgets/detail/AnalysisTab.dart
-import 'package:final_project/pages/review/reviewPage.dart';
+import 'package:pik/pages/review/reviewPage.dart';
 import 'package:flutter/material.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/styles/styles.dart';
 
 class AnalysisTab extends StatefulWidget {
   final Map<String, dynamic> data;

@@ -1,10 +1,10 @@
 // widgets/detail/ReviewTab.dart
-import 'package:final_project/pages/review/writeReviewPage.dart';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/services/review_service.dart';
-import 'package:final_project/services/sentiment_service.dart';
+import 'package:pik/pages/review/writeReviewPage.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/services/review_service.dart';
+import 'package:pik/services/sentiment_service.dart';
 import 'package:flutter/material.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ReviewsTab extends StatefulWidget {

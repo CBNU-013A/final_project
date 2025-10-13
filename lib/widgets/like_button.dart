@@ -1,6 +1,6 @@
 // widgets/like_button.dart
 import 'package:flutter/material.dart';
-import 'package:final_project/services/like_service.dart';
+import 'package:pik/services/like_service.dart';
 
 class LikeButton extends StatefulWidget {
   final String userId;
