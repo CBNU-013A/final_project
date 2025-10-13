@@ -1,23 +1,20 @@
 // pages/review/writeReviewPage.dart
 import 'package:final_project/styles/styles.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'dart:io';
 import 'package:final_project/services/review_service.dart';
-
-final String baseUrl = Platform.isAndroid
-    ? 'http://${dotenv.env['BASE_URL']}:8001'
-    : 'http://localhost:8001';
 
 class WriteReviewPage extends StatefulWidget {
   final String placeId;
   final String token;
+  final String placeName;
 
-  const WriteReviewPage({Key? key, required this.placeId, required this.token})
-      : super(key: key);
+  const WriteReviewPage({
+    Key? key,
+    required this.placeId,
+    required this.token,
+    this.placeName = '',
+  }) : super(key: key);
 
   @override
   _WriteReviewPageState createState() => _WriteReviewPageState();
@@ -87,18 +84,42 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
       return;
     }
 
-    final reviewService = ReviewService();
-    final success = await reviewService.createReview(placeId, newText, token);
-
-    if (!mounted) return;
-    if (success) {
+    if (token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('리뷰 작성 완료')),
+        const SnackBar(content: Text('로그인이 필요합니다.')),
       );
-      Navigator.pop(context, newText);
-    } else {
+      return;
+    }
+
+    try {
+      final reviewService = ReviewService();
+      final success = await reviewService.createReview(placeId, newText, token);
+
+      if (!mounted) return;
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('리뷰 작성 완료'),
+            backgroundColor: AppColors.mainGreen,
+          ),
+        );
+        Navigator.pop(context, newText);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('리뷰 작성 실패. 다시 시도해주세요.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ 리뷰 작성 중 에러: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('리뷰 작성 실패')),
+        SnackBar(
+          content: Text('오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -113,7 +134,6 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
-    final placeId = widget.placeId;
     final newText = _contentController.text.trim();
 
     if (newText.isEmpty) {
@@ -134,12 +154,18 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
     if (!mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('리뷰 수정 완료')),
+        const SnackBar(
+          content: Text('리뷰 수정 완료'),
+          backgroundColor: AppColors.mainGreen,
+        ),
       );
       Navigator.pop(context, newText);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('리뷰 수정 실패')),
+        const SnackBar(
+          content: Text('리뷰 수정 실패'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -149,6 +175,15 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.lightWhite,
+        centerTitle: true,
+        title: Text(
+          widget.placeName.isNotEmpty ? widget.placeName : '리뷰 작성',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
         actions: [
           const SizedBox(width: 8.0),
           TextButton(

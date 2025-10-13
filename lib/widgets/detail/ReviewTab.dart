@@ -45,31 +45,40 @@ class _ReviewsTabState extends State<ReviewsTab> {
 
       setState(() {
         myReview = reviewData['content'] ?? '';
-        myReviewId = reviewData['_id'] ?? '';
+        myReviewId = reviewData['reviewId'] ?? '';
       });
 
       debugPrint("📥 내 리뷰: $myReview");
 
-      // 리뷰가 있으면 감성 분석 수행
-      if (myReview.isNotEmpty) {
-        setState(() {
-          _isAnalyzing = true;
-        });
-        final result = await sentimentService.analyzeSentiment(myReview);
-        setState(() {
-          _isAnalyzing = false;
-        });
+      // 서버에서 받은 감성 분석 결과 사용
+      if (myReview.isNotEmpty && reviewData['sentimentAspects'] != null) {
+        final sentimentAspects =
+            reviewData['sentimentAspects'] as List<dynamic>;
 
-        debugPrint("감성 분석 결과: $result");
-        if (result != null && result['sentiments'] != null) {
-          setState(() {
-            sentimentResult = Map<String, dynamic>.from(result['sentiments']);
-            if (result['categories'] != null) {
-              categoryResult = Map<String, dynamic>.from(result['categories']);
+        debugPrint("📊 서버에서 받은 감성 분석 결과: $sentimentAspects");
+
+        if (sentimentAspects.isNotEmpty) {
+          // sentimentAspects를 sentiment와 category 형태로 변환
+          Map<String, dynamic> sentiments = {};
+          Map<String, dynamic> categories = {};
+
+          for (var aspect in sentimentAspects) {
+            final aspectName = aspect['aspect']?['name'] ?? '';
+            final sentiment = aspect['sentiment'] ?? '';
+
+            if (aspectName.isNotEmpty && sentiment.isNotEmpty) {
+              sentiments[aspectName] = sentiment;
+              categories[aspectName] = aspectName; // 카테고리는 aspect 이름 그대로 사용
             }
+          }
+
+          setState(() {
+            sentimentResult = sentiments;
+            categoryResult = categories;
           });
-          debugPrint("감성 분석 결과: ${result['sentiments']}");
-          debugPrint("카테고리 분석 결과: ${result['categories']}");
+
+          debugPrint("✅ 감성 분석 결과: $sentimentResult");
+          debugPrint("✅ 카테고리 결과: $categoryResult");
         }
       }
     } catch (e) {
@@ -344,19 +353,20 @@ class _ReviewsTabState extends State<ReviewsTab> {
                   MaterialPageRoute(
                     builder: (context) => WriteReviewPage(
                       placeId: widget.data['_id'],
-                      token: prefs.getString('') ?? '',
+                      token: prefs.getString('token') ?? '',
+                      placeName: widget.data['title'] ?? '',
                     ),
                   ),
                 );
                 if (result != null && result is String) {
-                  setState(() {
-                    myReview = result;
-                  });
-
+                  // 서버에서 감성 분석이 완료될 시간을 주기 위해 약간 대기
                   setState(() {
                     _isAnalyzing = true;
                   });
 
+                  await Future.delayed(const Duration(seconds: 2));
+
+                  // 리뷰와 감성 분석 결과 다시 불러오기 (서버에서 분석된 결과 포함)
                   await _loadMyReview();
 
                   setState(() {
@@ -366,7 +376,7 @@ class _ReviewsTabState extends State<ReviewsTab> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('리뷰 작성 및 감성 분석이 완료되었습니다!'),
+                        content: const Text('리뷰 작성이 완료되었습니다!'),
                         backgroundColor: AppColors.mainGreen,
                         behavior: SnackBarBehavior.floating,
                         duration: const Duration(seconds: 2),
@@ -408,6 +418,62 @@ class _ReviewsTabState extends State<ReviewsTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    TextButton(
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WriteReviewPage(
+                              placeId: widget.data['_id'],
+                              token: prefs.getString('token') ?? '',
+                              placeName: widget.data['title'] ?? '',
+                            ),
+                          ),
+                        );
+
+                        if (result != null && result is String) {
+                          // 서버에서 감성 분석이 완료될 시간을 주기 위해 약간 대기
+                          setState(() {
+                            _isAnalyzing = true;
+                          });
+
+                          await Future.delayed(const Duration(seconds: 2));
+
+                          // 리뷰와 감성 분석 결과 다시 불러오기 (서버에서 분석된 결과 포함)
+                          await _loadMyReview();
+
+                          setState(() {
+                            _isAnalyzing = false;
+                          });
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('리뷰 수정이 완료되었습니다!'),
+                                backgroundColor: AppColors.mainGreen,
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        '수정하기',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.deepGrean,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                     TextButton(
                       onPressed: () async {
                         final reviewService = ReviewService();
@@ -560,7 +626,7 @@ class _ReviewsTabState extends State<ReviewsTab> {
               ),
               const SizedBox(width: 12),
               const Text(
-                "리뷰 감성 분석 중...",
+                "리뷰 불러오는 중...",
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -571,7 +637,7 @@ class _ReviewsTabState extends State<ReviewsTab> {
           ),
           const SizedBox(height: 8),
           const Text(
-            "AI가 리뷰 내용을 분석하여 감성을 파악하고 있습니다.",
+            "서버에서 리뷰와 감성 분석 결과를 불러오고 있습니다.",
             style: TextStyle(
               fontSize: 13,
               color: Colors.black54,

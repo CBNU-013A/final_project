@@ -10,7 +10,7 @@ class ReviewService {
       ? 'http://${dotenv.env['BASE_URL']}:8001'
       : 'http://localhost:8001';
 
-  Future<Map<String, String>> getReviewsByLocation(
+  Future<Map<String, dynamic>> getReviewsByLocation(
       String locationId, String token, String userId) async {
     final url = Uri.parse('$baseUrl/api/review/$locationId');
     final response = await http.get(
@@ -20,6 +20,9 @@ class ReviewService {
         'Content-Type': 'application/json',
       },
     );
+
+    debugPrint('📡 리뷰 조회 응답 코드: ${response.statusCode}');
+
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
       final List<dynamic> reviews = data['reviews'];
@@ -29,12 +32,15 @@ class ReviewService {
         (review) => review['author'] == userId,
         orElse: () => null,
       );
-      if (userReview != null &&
-          userReview['content'] != null &&
-          userReview['_id'] != null) {
+
+      if (userReview != null && userReview['content'] != null) {
+        debugPrint('📥 조회된 리뷰 데이터: ${userReview.toString()}');
+
+        // 감성 분석 결과 포함하여 반환
         return {
           'content': userReview['content'] as String,
           'reviewId': userReview['_id'] as String,
+          'sentimentAspects': userReview['sentimentAspects'] ?? [],
         };
       }
     } else {
@@ -47,6 +53,10 @@ class ReviewService {
       String placeId, String content, String token) async {
     final url = Uri.parse('$baseUrl/api/review/$placeId');
 
+    debugPrint('📡 리뷰 작성 요청: $url');
+    debugPrint('🔑 토큰: ${token.isNotEmpty ? "존재함" : "비어있음"}');
+    debugPrint('📝 내용: $content');
+
     final response = await http.post(
       url,
       headers: {
@@ -57,6 +67,9 @@ class ReviewService {
         'content': content,
       }),
     );
+
+    debugPrint('📡 리뷰 작성 응답 코드: ${response.statusCode}');
+    debugPrint('📨 응답 본문: ${response.body}');
 
     return response.statusCode == 201;
   }
