@@ -1,154 +1,235 @@
 // services/review_service.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+final String baseUrl = Platform.isAndroid
+    ? 'http://${dotenv.env['BASE_URL']}:8001'
+    : 'http://localhost:8001';
 
 class ReviewService {
-  final String baseUrl = Platform.isAndroid
-      ? 'http://${dotenv.env['BASE_URL']}:8001'
-      : 'http://localhost:8001';
-
-  Future<Map<String, dynamic>> getReviewsByLocation(
-      String locationId, String token, String userId) async {
-    final url = Uri.parse('$baseUrl/api/review/$locationId');
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    debugPrint('📡 리뷰 조회 응답 코드: ${response.statusCode}');
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      final List<dynamic> reviews = data['reviews'];
-
-      // 현재 사용자(author)의 리뷰만 필터링
-      final userReview = reviews.firstWhere(
-        (review) => review['author'] == userId,
-        orElse: () => null,
+  // 특정 장소의 리뷰 목록 조회
+  Future<List<dynamic>> getReviewsByLocation(
+      String locationId, String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/review/$locationId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
 
-      if (userReview != null && userReview['content'] != null) {
-        debugPrint('📥 조회된 리뷰 데이터: ${userReview.toString()}');
-
-        // 감성 분석 결과 포함하여 반환
-        return {
-          'content': userReview['content'] as String,
-          'reviewId': userReview['_id'] as String,
-          'sentimentAspects': userReview['sentimentAspects'] ?? [],
-        };
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ 리뷰 조회 성공: ${data['reviews']?.length ?? 0}개');
+        return data['reviews'] ?? [];
+      } else {
+        print('❌ 리뷰 조회 실패: ${response.statusCode}');
+        print('응답: ${response.body}');
+        return []; // 빈 배열 반환하여 앱이 크래시되지 않도록 함
       }
-    } else {
-      throw Exception('리뷰 조회 실패');
+    } catch (e) {
+      print('❌ 리뷰 조회 에러: $e');
+      return []; // 빈 배열 반환하여 앱이 크래시되지 않도록 함
     }
-    return {};
   }
 
-  Future<bool> createReview(
-      String placeId, String content, String token) async {
-    final url = Uri.parse('$baseUrl/api/review/$placeId');
+  // 사용자의 특정 장소 리뷰 조회 (내 리뷰 찾기용)
+  Future<Map<String, dynamic>> getMyReviewByLocation(
+      String locationId, String token, String userId) async {
+    try {
+      final reviews = await getReviewsByLocation(locationId, token);
 
-    debugPrint('📡 리뷰 작성 요청: $url');
-    debugPrint('🔑 토큰: ${token.isNotEmpty ? "존재함" : "비어있음"}');
-    debugPrint('📝 내용: $content');
+      // 현재 사용자의 리뷰 찾기
+      for (var review in reviews) {
+        if (review['author'] == userId) {
+          return {
+            'content': review['content'],
+            'reviewId': review['_id'],
+            'sentimentAspects': review['sentimentAspects'] ?? [],
+          };
+        }
+      }
 
-    final response = await http.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'content': content,
-      }),
-    );
-
-    debugPrint('📡 리뷰 작성 응답 코드: ${response.statusCode}');
-    debugPrint('📨 응답 본문: ${response.body}');
-
-    return response.statusCode == 201;
+      return {'content': '', 'reviewId': '', 'sentimentAspects': []};
+    } catch (e) {
+      print('❌ 내 리뷰 조회 에러: $e');
+      return {'content': '', 'reviewId': '', 'sentimentAspects': []};
+    }
   }
 
-  Future<bool> deleteReview(String? reviewId, String? token) async {
-    if (reviewId == null ||
-        reviewId.isEmpty ||
-        token == null ||
-        token.isEmpty) {
+  // 사용자의 특정 장소 리뷰 상세 조회 (감성 분석 결과 포함)
+  Future<Map<String, dynamic>> getMyReviewWithSentiment(
+      String locationId, String token, String userId) async {
+    try {
+      // 사용자 리뷰 전체 조회에서 해당 장소의 리뷰 찾기
+      final userReviews = await getReviewsByUser(userId, token);
+
+      for (var review in userReviews) {
+        if (review['location']['_id'] == locationId ||
+            review['location'] == locationId) {
+          return {
+            'content': review['content'],
+            'reviewId': review['_id'],
+            'sentimentAspects': review['sentimentAspects'] ?? [],
+          };
+        }
+      }
+
+      return {'content': '', 'reviewId': '', 'sentimentAspects': []};
+    } catch (e) {
+      print('❌ 내 리뷰 상세 조회 에러: $e');
+      return {'content': '', 'reviewId': '', 'sentimentAspects': []};
+    }
+  }
+
+  // 리뷰 생성
+  Future<bool> createReview(String locationId, String content, String token,
+      {List<String>? categories}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/review/$locationId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'content': content,
+          'categories': categories ?? [],
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        print('✅ 리뷰 생성 성공: ${data['content']}');
+        print('📊 감성 분석 결과: ${data['sentimentAspects']?.length ?? 0}개');
+        return true;
+      } else {
+        print('❌ 리뷰 생성 실패: ${response.statusCode}');
+        print('응답: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ 리뷰 생성 에러: $e');
       return false;
     }
-
-    final url = Uri.parse('$baseUrl/api/review/$reviewId');
-    final response = await http.delete(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    return response.statusCode == 200;
   }
 
-  Future<bool> updateReview(
-      String reviewId, String content, String token) async {
-    final url = Uri.parse('$baseUrl/api/review/$reviewId');
-    final response = await http.patch(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'content': content,
-      }),
-    );
+  // 리뷰 수정
+  Future<bool> updateReview(String reviewId, String content, String token,
+      {List<String>? categories}) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/api/review/$reviewId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'content': content,
+          'categories': categories ?? [],
+        }),
+      );
 
-    debugPrint('📡 PATCH 상태 코드: ${response.statusCode}');
-    debugPrint('📨 응답 본문: ${response.body}');
-
-    return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ 리뷰 수정 성공: ${data['message']}');
+        return true;
+      } else {
+        print('❌ 리뷰 수정 실패: ${response.statusCode}');
+        print('응답: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ 리뷰 수정 에러: $e');
+      return false;
+    }
   }
 
-  Future<List<Map<String, String>>> getReviewsByUser(
-      String? token, String? userId) async {
-    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
+  // 리뷰 삭제
+  Future<bool> deleteReview(String reviewId, String token) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/review/$reviewId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ 리뷰 삭제 성공: ${data['message']}');
+        return true;
+      } else {
+        print('❌ 리뷰 삭제 실패: ${response.statusCode}');
+        print('응답: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ 리뷰 삭제 에러: $e');
+      return false;
+    }
+  }
+
+  // 사용자 작성 리뷰 전체 조회
+  Future<List<dynamic>> getReviewsByUser(String userId, String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/review/user/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ 사용자 리뷰 조회 성공: ${data['reviews']?.length ?? 0}개');
+        return data['reviews'] ?? [];
+      } else {
+        print('❌ 사용자 리뷰 조회 실패: ${response.statusCode}');
+        print('응답: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ 사용자 리뷰 조회 에러: $e');
       return [];
     }
+  }
 
-    final url = Uri.parse('$baseUrl/api/review/user/$userId');
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      final List<dynamic> reviews = data['reviews'].reversed.toList();
-
-      return reviews.map<Map<String, String>>((review) {
-        final content = review['content'] ?? '';
-        final location = review['location'];
-        final id = review['_id'];
-        final locationName =
-            location is Map<String, dynamic> ? location['title'] ?? '' : '';
-        final locationId =
-            location is Map<String, dynamic> ? location['_id'] ?? '' : '';
-
-        return {
-          'id': id,
+  // 감성 분석만 수행 (리뷰 저장 없이)
+  Future<Map<String, dynamic>?> analyzeReview(
+      String content, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/review/analyze'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
           'content': content,
-          'location': locationName,
-          'locationId': locationId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ 감성 분석 성공: ${data['message']}');
+        return {
+          'rawSentiments': data['rawSentiments'],
+          'processed': data['processed'],
         };
-      }).toList();
-    } else {
-      throw Exception('리뷰 조회 실패');
+      } else {
+        print('❌ 감성 분석 실패: ${response.statusCode}');
+        print('응답: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ 감성 분석 에러: $e');
+      return null;
     }
   }
 }

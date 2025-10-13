@@ -1,9 +1,9 @@
 // pages/recommend/setTripPage.dart
 import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/pages/recommend/setWithPage.dart';
+import 'package:final_project/pages/recommend/InteractiveRecommendPage.dart';
+import 'package:final_project/pages/recommend/RecommendHistoryPage.dart';
 import 'package:final_project/styles/styles.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 class setTripPage extends StatefulWidget {
   final String userId;
@@ -71,34 +71,44 @@ class _setTripPageState extends State<setTripPage> {
             const SizedBox(height: 40),
             TextButton(
               onPressed: () {
-                // 다음 페이지로 이동
+                // 인터랙티브 추천 페이지로 이동
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        Setwithpage(), // NextPage를 실제 이동할 페이지로 교체하세요.
+                    builder: (context) => const InteractiveRecommendPage(),
                   ),
                 );
               },
-              child: Text("빠른 추천 받기"),
+              child: const Text("빠른 추천 받기"),
               style: ButtonStyles.bigButtonStyle(context: context),
             ),
-            // const SizedBox(height: 5),
-            TextButton(
-              onPressed: () => {},
-              child: Text(
-                "돌아가기",
-                style: TextStyle(color: AppColors.deepGrean),
-              ),
-              style: ButtonStyles.bigButtonStyle(context: context).copyWith(
-                backgroundColor:
-                    MaterialStateProperty.all(AppColors.lightGreen),
-                foregroundColor: MaterialStateProperty.all(Colors.white),
-                side: MaterialStateProperty.all(
-                  BorderSide(color: AppColors.lightGreen),
+            const SizedBox(height: 8),
+            // 이전 추천 여행지 버튼
+            OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RecommendHistoryPage(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.mainGreen,
+                backgroundColor: Colors.white,
+                minimumSize: Size(MediaQuery.of(context).size.width * 0.9, 40),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                side: const BorderSide(
+                  color: AppColors.mainGreen,
+                  width: 0.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-            )
+              child: const Text("이전 추천 여행지"),
+            ),
           ],
         ),
       ),

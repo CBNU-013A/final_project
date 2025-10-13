@@ -1,4 +1,5 @@
 // services/recommendation_service.dart
+// services/recommendation_service.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -164,17 +165,36 @@ class RecommendationService {
       debugPrint('사용자 ID: $userId');
       debugPrint('사용자 선택사항: $userSelections');
 
-      final payload = {
+      final payload = <String, dynamic>{
         'userId': userId,
         'city': userSelections['city'] ?? [],
-        'accompany': userSelections['accompany'] ?? '',
-        'season': userSelections['season'] ?? '',
-        'place': userSelections['place'] ?? '',
-        'activity': userSelections['activity'] ?? '',
-        'conveniences': userSelections['conveniences'] ?? [],
       };
 
-      debugPrint('추천 요청 payload: $payload');
+      // 선택된 값만 payload에 추가 (빈 값 제외)
+      if (userSelections.containsKey('accompany')) {
+        payload['accompany'] = userSelections['accompany'];
+      }
+      if (userSelections.containsKey('season')) {
+        payload['season'] = userSelections['season'];
+      }
+      if (userSelections.containsKey('place')) {
+        payload['place'] = userSelections['place'];
+      }
+      if (userSelections.containsKey('activity')) {
+        payload['activity'] = userSelections['activity'];
+      }
+      if (userSelections.containsKey('conveniences')) {
+        debugPrint(
+            '🔍 [서비스] userSelections에서 가져온 conveniences: ${userSelections['conveniences']}');
+        debugPrint(
+            '🔍 [서비스] 타입: ${userSelections['conveniences'].runtimeType}');
+        payload['conveniences'] = userSelections['conveniences'];
+        debugPrint('🔍 [서비스] payload에 저장 후: ${payload['conveniences']}');
+      }
+
+      debugPrint('📤 추천 요청 payload: $payload');
+      debugPrint('📤 편의시설 payload: ${payload['conveniences']}');
+      debugPrint('📤 전체 payload JSON: ${jsonEncode(payload)}');
 
       final response = await http.post(
         Uri.parse('$baseUrl/api/recommend/filter'),

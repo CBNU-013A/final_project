@@ -88,6 +88,129 @@ class _SummaryTabState extends State<SummaryTab> {
     );
   }
 
+  Widget _buildTopAspectsChart() {
+    final aggregatedAnalysis = widget.data['aggregatedAnalysis'];
+    if (aggregatedAnalysis == null) {
+      return const SizedBox.shrink();
+    }
+
+    final sentimentAspects =
+        aggregatedAnalysis['sentimentAspects'] as Map<String, dynamic>?;
+    if (sentimentAspects == null || sentimentAspects.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // 항목별 총 개수 계산 및 정렬 (AnalysisTab 로직 참고)
+    final aspectCounts = <MapEntry<String, int>>[];
+
+    for (var entry in sentimentAspects.entries) {
+      final aspectName = entry.key;
+      final sentiment = entry.value as Map<String, dynamic>;
+      final pos = sentiment['pos'] ?? 0;
+      final neg = sentiment['neg'] ?? 0;
+      final none = sentiment['none'] ?? 0;
+      final total = pos + neg + none;
+
+      if (total > 0) {
+        aspectCounts.add(MapEntry(aspectName, total));
+      }
+    }
+
+    // 개수 기준 내림차순 정렬
+    aspectCounts.sort((a, b) => b.value.compareTo(a.value));
+
+    // 상위 5개만 선택
+    final top5 = aspectCounts.take(5).toList();
+    if (top5.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // 최대값 구하기 (막대 높이 정규화용)
+    final maxCount = top5.first.value;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '항목별 분석 개수 (상위 5개)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: top5.map((entry) {
+                final aspectName = entry.key;
+                final count = entry.value;
+                final heightRatio = count / maxCount;
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          count.toString(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.deepGrean,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0.0, end: heightRatio),
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Container(
+                              width: double.infinity,
+                              height: 150 * value,
+                              decoration: BoxDecoration(
+                                color: AppColors.mainGreen,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          aspectName,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -244,6 +367,7 @@ class _SummaryTabState extends State<SummaryTab> {
                         .copyWith(color: Colors.black),
                   ),
                   toggleAnalysis(),
+                  if (_selectedAnalysisIndex == 0) _buildTopAspectsChart(),
                   SummaryWidget(placeId: widget.data['_id'].toString()),
                   const Padding(
                     padding: EdgeInsets.fromLTRB(0, 10, 0, 0),

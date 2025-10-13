@@ -15,8 +15,16 @@ class Splash extends StatefulWidget {
 }
 
 class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
+  // Per-user onboarding key helper
+  String _onboardingKey(String userId) => 'onboarding_'+userId;
+
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+
+  // NOTE: 다른 화면에서 온보딩 완료 시점에 아래와 같이 저장하세요.
+  // final prefs = await SharedPreferences.getInstance();
+  // await prefs.setBool(_onboardingKey(userId), true);
+  // 이렇게 하면 유저별로 온보딩 진행 여부가 분리 관리됩니다.
 
   @override
   void initState() {
@@ -46,27 +54,28 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
+    final userId = prefs.getString('userId');
 
     Widget nextPage;
 
-    if (token != null && token.isNotEmpty) {
-      // 토큰이 있으면 온보딩 완료 여부 확인
+    if (token != null && token.isNotEmpty && userId != null && userId.isNotEmpty) {
+      // 토큰이 있고 userId가 있으면 유저별 온보딩 완료 여부 확인 (기본값: 미완료=false)
       final hasCompletedOnboarding =
-          prefs.getBool('hasCompletedOnboarding') ?? true;
+          prefs.getBool(_onboardingKey(userId)) ?? false; // 신규 유저 → false
 
       if (!hasCompletedOnboarding) {
         // 온보딩 미완료 → 랜덤 선택 페이지
         nextPage = const RandomLocationPage();
-        debugPrint("✅ 자동 로그인 성공 → 온보딩 페이지로 이동");
+        debugPrint("✅ 자동 로그인 성공 · 신규/미완료 → 온보딩(Random) 페이지로 이동");
       } else {
         // 온보딩 완료 → 홈 화면
         nextPage = const HomePage();
-        debugPrint("✅ 자동 로그인 성공 → 홈 화면으로 이동");
+        debugPrint("✅ 자동 로그인 성공 · 온보딩 완료 → 홈 화면으로 이동");
       }
     } else {
-      // 토큰이 없으면 로그인 페이지
+      // 토큰 또는 userId가 없으면 로그인 페이지
       nextPage = const LoginPage();
-      debugPrint("❌ 저장된 토큰 없음 → 로그인 페이지로 이동");
+      debugPrint("❌ 저장된 토큰 또는 userId 없음 → 로그인 페이지로 이동");
     }
 
     if (!mounted) return;

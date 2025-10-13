@@ -25,6 +25,8 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
   String? myReview;
   String? myReviewId;
   bool _isEditing = false;
+  Map<String, dynamic>? _sentimentAnalysis;
+  bool _isAnalyzing = false;
 
   @override
   void initState() {
@@ -40,7 +42,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
     final userId = prefs.getString('userId') ?? '';
 
     try {
-      final reviewData = await reviewService.getReviewsByLocation(
+      final reviewData = await reviewService.getMyReviewByLocation(
         placeId,
         token,
         userId,
@@ -71,6 +73,40 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
     super.dispose();
   }
 
+  // 감성 분석 수행
+  Future<void> _analyzeSentiment() async {
+    final text = _contentController.text.trim();
+    if (text.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    if (token.isEmpty) return;
+
+    setState(() {
+      _isAnalyzing = true;
+    });
+
+    try {
+      final reviewService = ReviewService();
+      final result = await reviewService.analyzeReview(text, token);
+
+      setState(() {
+        _sentimentAnalysis = result;
+        _isAnalyzing = false;
+      });
+
+      if (result != null) {
+        debugPrint('✅ 감성 분석 완료: ${result['rawSentiments']}');
+      }
+    } catch (e) {
+      debugPrint('❌ 감성 분석 실패: $e');
+      setState(() {
+        _isAnalyzing = false;
+      });
+    }
+  }
+
   void _createReview() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
@@ -97,9 +133,12 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
 
       if (!mounted) return;
       if (success) {
+        // 리뷰 작성 성공 후 감성 분석 결과 조회
+        await _loadMyReview();
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('리뷰 작성 완료'),
+            content: Text('리뷰 작성 완료! 감성 분석 결과를 확인해보세요.'),
             backgroundColor: AppColors.mainGreen,
           ),
         );
@@ -153,9 +192,12 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
 
     if (!mounted) return;
     if (success) {
+      // 리뷰 수정 성공 후 감성 분석 결과 조회
+      await _loadMyReview();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('리뷰 수정 완료'),
+          content: Text('리뷰 수정 완료! 감성 분석 결과를 확인해보세요.'),
           backgroundColor: AppColors.mainGreen,
         ),
       );
@@ -185,6 +227,20 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
           ),
         ),
         actions: [
+          // 감성 분석 버튼
+          TextButton(
+            onPressed: _isAnalyzing ? null : _analyzeSentiment,
+            child: _isAnalyzing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text(
+                    '분석',
+                    style: TextStyle(color: AppColors.deepGrean),
+                  ),
+          ),
           const SizedBox(width: 8.0),
           TextButton(
             style: ButtonStyle(
@@ -208,28 +264,102 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: TextField(
-          controller: _contentController,
-          onChanged: (value) {
-            setState(() {});
-          },
-          maxLength: 100,
-          maxLines: 10,
-          textAlignVertical: TextAlignVertical.top,
-          cursorColor: Colors.black,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(2.0)),
-              borderSide: BorderSide(color: Colors.grey),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _contentController,
+              onChanged: (value) {
+                setState(() {});
+              },
+              maxLength: 100,
+              maxLines: 10,
+              textAlignVertical: TextAlignVertical.top,
+              cursorColor: Colors.black,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(2.0)),
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(2.0)),
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                hintText:
+                    '욕설, 비방 등 상대방을 불쾌하게 하는 의견은 남기지 말아주세요. 신고를 당하면 서비스 이용이 제한될 수 있어요.',
+                hintMaxLines: 3,
+              ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(2.0)),
-              borderSide: BorderSide(color: Colors.grey),
-            ),
-            hintText:
-                '욕설, 비방 등 상대방을 불쾌하게 하는 의견은 남기지 말아주세요. 신고를 당하면 서비스 이용이 제한될 수 있어요.',
-            hintMaxLines: 3,
-          ),
+            const SizedBox(height: 16),
+            // 감성 분석 결과 표시
+            if (_sentimentAnalysis != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.lightWhite,
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: AppColors.mainGreen.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '감성 분석 결과',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepGrean,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_sentimentAnalysis!['rawSentiments'] != null)
+                      ...(_sentimentAnalysis!['rawSentiments']
+                              as Map<String, dynamic>)
+                          .entries
+                          .map((entry) => Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 2),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      '${entry.key}: ',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: entry.value == 'pos'
+                                            ? Colors.green.withOpacity(0.2)
+                                            : entry.value == 'neg'
+                                                ? Colors.red.withOpacity(0.2)
+                                                : Colors.grey.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        entry.value,
+                                        style: TextStyle(
+                                          color: entry.value == 'pos'
+                                              ? Colors.green[700]
+                                              : entry.value == 'neg'
+                                                  ? Colors.red[700]
+                                                  : Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ))
+                          .toList(),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

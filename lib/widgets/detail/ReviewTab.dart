@@ -1,5 +1,6 @@
 // widgets/detail/ReviewTab.dart
 import 'package:final_project/pages/review/writeReviewPage.dart';
+import 'package:final_project/services/location_service.dart';
 import 'package:final_project/services/review_service.dart';
 import 'package:final_project/services/sentiment_service.dart';
 import 'package:flutter/material.dart';
@@ -21,12 +22,31 @@ class _ReviewsTabState extends State<ReviewsTab> {
   final prefs = SharedPreferences.getInstance();
   final sentimentService = SentimentService();
   Map<String, dynamic> sentimentResult = {};
-  Map<String, dynamic> categoryResult = {};
   bool _isAnalyzing = false;
+  List<dynamic> _allReviews = []; // 전체 리뷰 목록
+
   @override
   void initState() {
     super.initState();
     _loadMyReview();
+    _loadAllReviews();
+  }
+
+  Future<void> _loadAllReviews() async {
+    try {
+      final locationService = LocationService();
+      final placeId = widget.data['_id'];
+      final data = await locationService.fetchLocation(placeId);
+
+      if (data['review'] != null) {
+        setState(() {
+          _allReviews = data['review'] as List<dynamic>;
+        });
+        debugPrint("📥 전체 리뷰 ${_allReviews.length}개 불러옴");
+      }
+    } catch (e) {
+      debugPrint("❌ 전체 리뷰 불러오기 실패: $e");
+    }
   }
 
   Future<void> _loadMyReview() async {
@@ -37,7 +57,8 @@ class _ReviewsTabState extends State<ReviewsTab> {
     final userId = prefs.getString('userId') ?? '';
 
     try {
-      final reviewData = await reviewService.getReviewsByLocation(
+      // 감성 분석 결과가 포함된 상세 리뷰 조회
+      final reviewData = await reviewService.getMyReviewWithSentiment(
         placeId,
         token,
         userId,
@@ -58,27 +79,31 @@ class _ReviewsTabState extends State<ReviewsTab> {
         debugPrint("📊 서버에서 받은 감성 분석 결과: $sentimentAspects");
 
         if (sentimentAspects.isNotEmpty) {
-          // sentimentAspects를 sentiment와 category 형태로 변환
+          // sentimentAspects를 sentiment 형태로 변환
           Map<String, dynamic> sentiments = {};
-          Map<String, dynamic> categories = {};
 
           for (var aspect in sentimentAspects) {
             final aspectName = aspect['aspect']?['name'] ?? '';
-            final sentiment = aspect['sentiment'] ?? '';
+            final sentiment = aspect['sentiment'] ?? {};
 
-            if (aspectName.isNotEmpty && sentiment.isNotEmpty) {
-              sentiments[aspectName] = sentiment;
-              categories[aspectName] = aspectName; // 카테고리는 aspect 이름 그대로 사용
+            if (aspectName.isNotEmpty && sentiment is Map) {
+              // sentiment 객체에서 pos, neg, none 값 확인
+              String sentimentValue = 'none';
+              if (sentiment['pos'] == 1) {
+                sentimentValue = 'pos';
+              } else if (sentiment['neg'] == 1) {
+                sentimentValue = 'neg';
+              }
+
+              sentiments[aspectName] = sentimentValue;
             }
           }
 
           setState(() {
             sentimentResult = sentiments;
-            categoryResult = categories;
           });
 
           debugPrint("✅ 감성 분석 결과: $sentimentResult");
-          debugPrint("✅ 카테고리 결과: $categoryResult");
         }
       }
     } catch (e) {
@@ -161,7 +186,9 @@ class _ReviewsTabState extends State<ReviewsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> reviews = widget.data['review'] ?? [];
+    // _allReviews를 사용 (없으면 widget.data['review'] 사용)
+    final List<dynamic> reviews =
+        _allReviews.isNotEmpty ? _allReviews : (widget.data['review'] ?? []);
     final List<dynamic> reversedReviews = List<dynamic>.from(reviews.reversed);
 
     return Padding(
@@ -183,16 +210,39 @@ class _ReviewsTabState extends State<ReviewsTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "내가 쓴 리뷰",
-                    style: TextStyles.mediumTextStyle
-                        .copyWith(color: Colors.black, fontSize: 16),
+                  Row(
+                    children: [
+                      Text(
+                        "내가 쓴 리뷰",
+                        style: TextStyles.mediumTextStyle
+                            .copyWith(color: Colors.black, fontSize: 16),
+                      ),
+                      if (myReview.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.mainGreen,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            "작성완료",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 8),
                   _myReview(),
                   if (_isAnalyzing) _analyzingIndicator(),
                   if (sentimentResult.isNotEmpty && !_isAnalyzing)
-                    _sentimentResult(sentimentResult, categoryResult),
+                    _sentimentResult(sentimentResult),
                 ],
               ),
             ),
@@ -368,6 +418,8 @@ class _ReviewsTabState extends State<ReviewsTab> {
 
                   // 리뷰와 감성 분석 결과 다시 불러오기 (서버에서 분석된 결과 포함)
                   await _loadMyReview();
+                  // 전체 리뷰 목록도 다시 불러오기
+                  await _loadAllReviews();
 
                   setState(() {
                     _isAnalyzing = false;
@@ -405,20 +457,31 @@ class _ReviewsTabState extends State<ReviewsTab> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  myReview,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.5,
-                    letterSpacing: -0.2,
+                // 리뷰 내용
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Text(
+                    myReview,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.5,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
+                    // 수정 버튼
+                    ElevatedButton.icon(
                       onPressed: () async {
                         final prefs = await SharedPreferences.getInstance();
                         final result = await Navigator.push(
@@ -442,6 +505,8 @@ class _ReviewsTabState extends State<ReviewsTab> {
 
                           // 리뷰와 감성 분석 결과 다시 불러오기 (서버에서 분석된 결과 포함)
                           await _loadMyReview();
+                          // 전체 리뷰 목록도 다시 불러오기
+                          await _loadAllReviews();
 
                           setState(() {
                             _isAnalyzing = false;
@@ -459,22 +524,29 @@ class _ReviewsTabState extends State<ReviewsTab> {
                           }
                         }
                       },
-                      style: TextButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.mainGreen,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                            horizontal: 12, vertical: 8),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                      child: Text(
-                        '수정하기',
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text(
+                        '수정',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.deepGrean,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    TextButton(
+                    const SizedBox(width: 8),
+                    // 삭제 버튼
+                    ElevatedButton.icon(
                       onPressed: () async {
                         final reviewService = ReviewService();
                         final prefs = await SharedPreferences.getInstance();
@@ -551,7 +623,6 @@ class _ReviewsTabState extends State<ReviewsTab> {
                               myReview = '';
                               myReviewId = '';
                               sentimentResult = {};
-                              categoryResult = {};
                             });
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -574,18 +645,27 @@ class _ReviewsTabState extends State<ReviewsTab> {
                           }
                         }
                       },
-                      style: TextButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade50,
+                        foregroundColor: Colors.red.shade700,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                            horizontal: 12, vertical: 8),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.red.shade200),
+                        ),
+                        elevation: 0,
                       ),
-                      child: Text(
-                        '삭제하기',
+                      icon: Icon(Icons.delete_outline,
+                          size: 16, color: Colors.red.shade700),
+                      label: Text(
+                        '삭제',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade700,
                         ),
                       ),
                     ),
@@ -650,8 +730,7 @@ class _ReviewsTabState extends State<ReviewsTab> {
   }
 }
 
-Widget _sentimentResult(
-    Map<String, dynamic> sentiments, Map<String, dynamic> categories) {
+Widget _sentimentResult(Map<String, dynamic> sentiments) {
   String translate(String key) {
     switch (key) {
       case 'pos':
@@ -753,6 +832,7 @@ Widget _sentimentResult(
             final key = entry.key;
             final value = entry.value;
             return Container(
+              width: 140, // 고정 너비 설정
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: backgroundColor(value),
@@ -763,114 +843,43 @@ Widget _sentimentResult(
                 ),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Icon(
                     getIcon(value),
                     size: 16,
                     color: textColor(value),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "$key",
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: textColor(value),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    translate(value),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: textColor(value).withOpacity(0.8),
+                  const SizedBox(width: 8),
+                  RichText(
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: key,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: textColor(value),
+                          ),
+                        ),
+                        TextSpan(
+                          text: '  ${translate(value)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: textColor(value).withOpacity(0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             );
           }).toList(),
-        ),
-        const SizedBox(height: 12),
-        // 카테고리 분석 결과 표시
-        if (categories.isNotEmpty) ...[
-          const Text(
-            "카테고리 분석",
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: categories.entries.map((entry) {
-              final key = entry.key;
-              final value = entry.value;
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.mainGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.mainGreen.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.category,
-                      size: 14,
-                      color: AppColors.mainGreen,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "$key: $value",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.mainGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-        ],
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.lightWhite,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: 16,
-                color: AppColors.mainGreen,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "분석 결과는 AI가 리뷰 내용을 바탕으로 자동으로 생성됩니다.",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.mainGreen.withOpacity(0.8),
-                    height: 1.3,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     ),

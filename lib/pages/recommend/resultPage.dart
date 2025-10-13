@@ -46,8 +46,25 @@ class _ResultPageState extends State<ResultPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final List<dynamic> allRecommendations = data['recommendations'] ?? [];
+
+        // 충청도 지역 목록
+        final chungcheongRegions = ['충북', '충남', '대전', '세종'];
+
+        // 충청도 장소와 기타 장소를 분리
+        final chungcheongPlaces = allRecommendations.where((rec) {
+          final city = rec['city'] ?? rec['address'] ?? '';
+          return chungcheongRegions.any((region) => city.contains(region));
+        }).toList();
+
+        final otherPlaces = allRecommendations.where((rec) {
+          final city = rec['city'] ?? rec['address'] ?? '';
+          return !chungcheongRegions.any((region) => city.contains(region));
+        }).toList();
+
+        // 충청도 장소를 앞에, 기타 장소를 뒤에 배치
         setState(() {
-          recommendations = data['recommendations'];
+          recommendations = [...chungcheongPlaces, ...otherPlaces];
         });
       }
     } catch (_) {
