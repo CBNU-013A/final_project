@@ -416,18 +416,63 @@ class _ReviewsTabState extends State<ReviewsTab> {
 
                         final confirmed = await showDialog<bool>(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('리뷰 삭제'),
-                            content: const Text('정말로 이 리뷰를 삭제하시겠습니까?'),
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: AppColors.lightWhite,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            insetPadding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 24),
+                            titlePadding:
+                                const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                            contentPadding:
+                                const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                            actionsPadding:
+                                const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                            title: const Text(
+                              '리뷰 삭제',
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w700),
+                            ),
+                            content: const Text(
+                              '정말로 이 리뷰를 삭제하시겠습니까?',
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  color: Colors.black87),
+                            ),
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('취소'),
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
+                                ),
+                                child: Text(
+                                  '취소',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.deepGrean.withOpacity(0.8),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('삭제',
-                                    style: TextStyle(color: Colors.red)),
+                              ElevatedButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 18, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: const Text('확인',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700)),
                               ),
                             ],
                           ),

@@ -1,10 +1,8 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk_template.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'pages/home/HomePage.dart'; // 홈 페이지
-import 'pages/auth/loginPage.dart';
-import 'widgets/splashLogo.dart'; // 로그인 페이지
+import 'widgets/splashLogo.dart';
+import 'pages/home/HomePage.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -40,26 +38,10 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  Widget _startScreen =
-      const CircularProgressIndicator(color: Colors.grey); // 로딩 UI
-
   @override
   void initState() {
     super.initState();
-    _checkAutoLogin(); // 자동 로그인 체크
     _printCurrentLocation(); //현재 위치 가져오기
-  }
-
-  void _checkAutoLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
-    if (token != null && token.isNotEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
-    }
   }
 
   Future<Position> _getCurrentLocation() async {

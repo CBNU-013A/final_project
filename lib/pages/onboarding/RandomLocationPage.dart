@@ -1,4 +1,5 @@
 // pages/onboarding/RandomLocationPage.dart
+// pages/onboarding/RandomLocationPage.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -120,7 +121,13 @@ class _RandomLocationPageState extends State<RandomLocationPage> {
     }
   }
 
-  void _skipToHome() {
+  void _skipToHome() async {
+    // 온보딩 완료 플래그 저장
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasCompletedOnboarding', true);
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false, // 바깥 터치로 닫히지 않음

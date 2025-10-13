@@ -84,7 +84,7 @@ class _LikepageState extends State<Likepage> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.deepGrean,
+                  // color: AppColors.deepGrean,
                 ),
               ),
             ),
