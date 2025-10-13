@@ -1,16 +1,13 @@
 // pages/auth/LoginPage.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:final_project/main.dart';
-import 'package:final_project/services/auth_service.dart';
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/pages/auth/RegisterPage.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/main.dart';
+import 'package:pik/services/auth_service.dart';
+import 'package:pik/pages/home/HomePage.dart';
+import 'package:pik/pages/auth/RegisterPage.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:final_project/services/like_service.dart';
-import 'package:final_project/pages/onboarding/RandomLocationPage.dart';
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pik/pages/onboarding/RandomLocationPage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -62,33 +59,28 @@ class _LoginPageState extends State<LoginPage> {
 
     if (success) {
       final prefs = await SharedPreferences.getInstance();
+      // 체크박스 상태 저장
+      await prefs.setBool('saveId', _saveId);
       if (_saveId) {
         await prefs.setString('savedEmail', email);
       } else {
         await prefs.remove('savedEmail');
       }
-      // ✅ 로그인 성공 분기: 좋아요가 없으면 랜덤 선택 페이지, 있으면 홈으로
-      final userId = prefs.getString('userId') ?? '';
-      final token = prefs.getString('token') ?? '';
-      List<dynamic>? likes;
-      try {
-        likes = await LikeService().loadUserLikePlaces(userId, token);
-      } catch (e) {
-        likes = [];
-        debugPrint('❌ 좋아요 조회 실패: $e');
-      }
+      // ✅ 로그인 성공 분기: 온보딩 완료 여부에 따라 랜덤 선택 페이지 또는 홈으로
+      final hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ??
+          true; // 기본값 true (기존 사용자 고려)
 
       if (!mounted) return;
 
-      if (likes == null || likes.isEmpty) {
-        // 좋아요 항목이 없을 경우 → 랜덤 선택 페이지
+      if (!hasCompletedOnboarding) {
+        // 온보딩 미완료 (회원가입 후 처음) → 랜덤 선택 페이지
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const RandomLocationPage()),
           (route) => false,
         );
       } else {
-        // 좋아요 항목이 있을 경우 → 홈 화면
+        // 온보딩 완료 → 홈 화면
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const HomePage()),
@@ -96,9 +88,6 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
 
-      rootScaffoldMessengerKey.currentState!.showSnackBar(
-        SnackBarStyles.info("😎 로그인 성공!"),
-      );
       debugPrint("loginpage : 로그인 성공 : $email");
     } else {
       rootScaffoldMessengerKey.currentState!.showSnackBar(

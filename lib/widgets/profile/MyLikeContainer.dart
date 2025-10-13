@@ -1,8 +1,8 @@
 // widgets/profile/MyLikeContainer.dart
-import 'package:final_project/pages/location/DetailPage.dart';
-import 'package:final_project/services/like_service.dart';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/services/like_service.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -133,7 +133,7 @@ class _MyLikeContainerState extends State<MyLikeContainer> {
                 debugPrint('📍 장소명: $placeName, ID: $placeId');
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(vertical: 3.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.lighterGreen.withOpacity(0.3),
@@ -164,10 +164,12 @@ class _MyLikeContainerState extends State<MyLikeContainer> {
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                            horizontal: 8, vertical: 4),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                              horizontal: 4, vertical: 0),
+                          minVerticalPadding: 0,
+                          dense: true,
                           leading: const Icon(
                             Icons.favorite,
                             color: AppColors.errorRed,
@@ -176,14 +178,14 @@ class _MyLikeContainerState extends State<MyLikeContainer> {
                           title: Text(
                             placeName,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: const Icon(Icons.chevron_right,
-                              color: Colors.grey),
+                              color: Colors.grey, size: 20),
                         ),
                       ),
                     ),

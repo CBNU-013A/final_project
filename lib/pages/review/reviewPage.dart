@@ -53,7 +53,7 @@ class _ReviewWidgetState extends State<ReviewWidget> {
   @override
   Widget build(BuildContext context) {
     return _matchedPlace == null
-        ? const Center(child: CircularProgressIndicator())
+        ? const SizedBox.shrink() // 로딩 표시 제거
         : SingleChildScrollView(
             padding: const EdgeInsets.all(0),
             child: Column(

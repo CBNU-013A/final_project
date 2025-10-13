@@ -1,8 +1,8 @@
 // pages/recommend/setSeasonPage.dart
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/pages/recommend/setFeaturesPage.dart';
-import 'package:final_project/services/keyword_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/pages/home/HomePage.dart';
+import 'package:pik/pages/recommend/setFeaturesPage.dart';
+import 'package:pik/services/keyword_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -322,7 +322,9 @@ class _SetseasonpageState extends State<Setseasonpage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: keywords.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.grey))
                         : Wrap(
                             alignment: WrapAlignment.center,
                             spacing: 10,

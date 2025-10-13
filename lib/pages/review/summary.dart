@@ -1,7 +1,7 @@
 // pages/review/summary.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:final_project/services/location_service.dart';
+import 'package:pik/services/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../styles/styles.dart';
@@ -135,7 +135,7 @@ class _SummaryWidgetState extends State<SummaryWidget> {
   @override
   Widget build(BuildContext context) {
     return place.isEmpty
-        ? const Center(child: CircularProgressIndicator())
+        ? const Center(child: CircularProgressIndicator(color: Colors.grey))
         : _buildSummarySection(place);
   }
 }

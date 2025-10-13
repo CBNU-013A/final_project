@@ -1,8 +1,8 @@
 // widgets/profile/MyReviewContainer.dart
-import 'package:final_project/pages/location/DetailPage.dart';
-import 'package:final_project/services/review_service.dart';
-import 'package:final_project/services/user_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/services/review_service.dart';
+import 'package:pik/services/user_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,13 +149,12 @@ class _MyReviewContainerState extends State<MyReviewContainer> {
               itemCount: reviews.length,
               itemBuilder: (context, index) {
                 final review = reviews[index];
-                final reviewId = review['id'] ?? '';
                 final content = review['content'] ?? '';
                 final location = review['location'] ?? '알 수 없음';
                 final locationId = review['locationId'] ?? '';
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(vertical: 3.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.lighterGreen.withOpacity(0.3),
@@ -179,34 +178,36 @@ class _MyReviewContainerState extends State<MyReviewContainer> {
                           MaterialPageRoute(
                             builder: (context) => DetailPage(
                               placeName: location,
-                              placeId: review['locationId'],
+                              placeId: locationId,
                             ),
                           ),
                         );
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                            horizontal: 8, vertical: 4),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 4),
+                              horizontal: 4, vertical: 0),
+                          minVerticalPadding: 0,
+                          dense: true,
                           title: Text(
                             content,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              height: 1.4,
+                              height: 1.3,
                               color: Colors.black87,
                             ),
                           ),
                           subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
+                            padding: const EdgeInsets.only(top: 4.0),
                             child: Row(
                               children: [
                                 const Icon(
                                   Icons.place_outlined,
                                   color: AppColors.mainGreen,
-                                  size: 16,
+                                  size: 14,
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
@@ -226,24 +227,74 @@ class _MyReviewContainerState extends State<MyReviewContainer> {
                           trailing: IconButton(
                             tooltip: '삭제',
                             icon: const Icon(Icons.delete_outline,
-                                color: Colors.grey),
+                                color: Colors.grey, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
                                 context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('리뷰 삭제'),
-                                  content: const Text('정말로 이 리뷰를 삭제하시겠습니까?'),
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: AppColors.lightWhite,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  insetPadding: const EdgeInsets.symmetric(
+                                      horizontal: 32, vertical: 24),
+                                  titlePadding:
+                                      const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                                  contentPadding:
+                                      const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                                  actionsPadding:
+                                      const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                                  title: const Text(
+                                    '리뷰 삭제',
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  content: const Text(
+                                    '정말로 이 리뷰를 삭제하시겠습니까?',
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        height: 1.5,
+                                        color: Colors.black87),
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: const Text('취소'),
+                                          Navigator.of(ctx).pop(false),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14, vertical: 10),
+                                      ),
+                                      child: Text(
+                                        '취소',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.deepGrean
+                                              .withOpacity(0.8),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ),
-                                    TextButton(
+                                    ElevatedButton(
                                       onPressed: () =>
-                                          Navigator.pop(context, true),
+                                          Navigator.of(ctx).pop(true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 18, vertical: 10),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        elevation: 0,
+                                      ),
                                       child: const Text('확인',
-                                          style: TextStyle(color: Colors.red)),
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700)),
                                     ),
                                   ],
                                 ),

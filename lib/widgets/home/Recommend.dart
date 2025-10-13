@@ -1,17 +1,16 @@
 // widgets/home/Recommend.dart
 
-import 'dart:convert';
 import 'dart:io';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/services/user_service.dart';
-import 'package:final_project/services/random_location_service.dart';
-import 'package:final_project/services/like_service.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/styles/text_styles.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/services/user_service.dart';
+import 'package:pik/services/random_location_service.dart';
+import 'package:pik/services/like_service.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/styles/text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:final_project/pages/location/DetailPage.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/pages/onboarding/RandomLocationPage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final String baseUrl = Platform.isAndroid
@@ -78,7 +77,7 @@ class RecommendState extends State<Recommend> {
     try {
       final likes = await likeService.loadUserLikePlaces(userId, token);
       setState(() {
-        likedPlaces = likes ?? [];
+        likedPlaces = likes;
         hasLikes = likedPlaces.isNotEmpty;
         _likedIds
           ..clear()
@@ -192,6 +191,7 @@ class RecommendState extends State<Recommend> {
   List<Map<String, dynamic>> getRecommendedPlaces(
       List<String> userKeywords, List<dynamic> allPlaces) {
     List<Map<String, dynamic>> scoredPlaces = [];
+    final chungcheongRegions = ['충북', '충남', '대전', '세종'];
 
     for (var place in allPlaces) {
       if (place['keywords'] == null || (place['keywords'] as List).isEmpty) {
@@ -218,18 +218,35 @@ class RecommendState extends State<Recommend> {
         }
       }
 
+      // 충청도 지역인지 확인
+      final city = place['city'] ?? place['address'] ?? '';
+      final isChungcheong =
+          chungcheongRegions.any((region) => city.contains(region));
+
       if (score > 0) {
         scoredPlaces.add({
           '_id': place['_id'],
           'name': place['name'],
+          'title': place['title'],
+          'city': city,
           'score': score.toStringAsFixed(2),
+          'isChungcheong': isChungcheong,
         });
       }
     }
 
-    scoredPlaces.sort(
-      (a, b) => double.parse(b['score']).compareTo(double.parse(a['score'])),
-    );
+    // 충청도 지역 우선 정렬 후 점수순 정렬
+    scoredPlaces.sort((a, b) {
+      final aIsChungcheong = a['isChungcheong'] ?? false;
+      final bIsChungcheong = b['isChungcheong'] ?? false;
+
+      // 충청도 지역이면 우선순위
+      if (aIsChungcheong && !bIsChungcheong) return -1;
+      if (!aIsChungcheong && bIsChungcheong) return 1;
+
+      // 같은 지역이면 점수로 비교
+      return double.parse(b['score']).compareTo(double.parse(a['score']));
+    });
 
     return scoredPlaces;
   }
@@ -258,7 +275,7 @@ class RecommendState extends State<Recommend> {
         children: [
           if (isLoading)
             const Center(
-              child: CircularProgressIndicator(color: Colors.blueGrey),
+              child: CircularProgressIndicator(color: Colors.grey),
             )
           else if (hasLikes) ...[
             Text(
@@ -268,10 +285,28 @@ class RecommendState extends State<Recommend> {
             ),
             const SizedBox(height: 10),
             if (_recommendations == null || _recommendations!.isEmpty)
-              const Center(
-                child: Text(
-                  "추천된 여행지가 아직 없습니다.",
-                  style: TextStyle(color: Colors.grey),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Icon(
+                      //   Icons.location_off_outlined,
+                      //   size: 48,
+                      //   color: Colors.grey[400],
+                      // ),
+                      // const SizedBox(height: 12),
+                      Text(
+                        "추천된 여행지가 없어요.",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else
@@ -371,9 +406,18 @@ class RecommendState extends State<Recommend> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Pik 추천 인기 여행지",
-                  style: AppTextStyles.sectionTitle,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const RandomLocationPage()),
+                    );
+                  },
+                  child: Text(
+                    "Pik 추천 인기 여행지",
+                    style: AppTextStyles.sectionTitle,
+                  ),
                 ),
                 TextButton.icon(
                   onPressed: loadRandomLocations,
@@ -464,11 +508,7 @@ class _RandomPlaceCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => DetailPage(
-                            placeName: (place['title'] ?? '정보 없음').toString(),
-                            placeId: (place['_id'] ?? '').toString(),
-                          ),
-                        ),
+                            builder: (context) => const RandomLocationPage()),
                       );
                     },
                     child: Text(
@@ -525,7 +565,9 @@ class _SquareImage extends StatelessWidget {
         return SizedBox(
           height: size,
           width: size,
-          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          child: const Center(
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.grey)),
         );
       },
       errorBuilder: (context, error, stackTrace) => _placeholder(),

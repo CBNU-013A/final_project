@@ -1,12 +1,12 @@
 // pages/recommend/resultPage.dart
 import 'dart:convert';
-import 'package:final_project/pages/location/DetailPage.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/widgets/BottomNavi.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/widgets/BottomNavi.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:final_project/services/sentiment_service.dart';
+import 'package:pik/services/sentiment_service.dart';
 
 class ResultPage extends StatefulWidget {
   const ResultPage({super.key});
@@ -46,8 +46,25 @@ class _ResultPageState extends State<ResultPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final List<dynamic> allRecommendations = data['recommendations'] ?? [];
+
+        // 충청도 지역 목록
+        final chungcheongRegions = ['충북', '충남', '대전', '세종'];
+
+        // 충청도 장소와 기타 장소를 분리
+        final chungcheongPlaces = allRecommendations.where((rec) {
+          final city = rec['city'] ?? rec['address'] ?? '';
+          return chungcheongRegions.any((region) => city.contains(region));
+        }).toList();
+
+        final otherPlaces = allRecommendations.where((rec) {
+          final city = rec['city'] ?? rec['address'] ?? '';
+          return !chungcheongRegions.any((region) => city.contains(region));
+        }).toList();
+
+        // 충청도 장소를 앞에, 기타 장소를 뒤에 배치
         setState(() {
-          recommendations = data['recommendations'];
+          recommendations = [...chungcheongPlaces, ...otherPlaces];
         });
       }
     } catch (_) {
@@ -91,7 +108,7 @@ class _ResultPageState extends State<ResultPage> {
           iconTheme: const IconThemeData(color: AppColors.deepGrean),
         ),
         body: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.grey))
             : SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -151,12 +168,24 @@ class _ResultPageState extends State<ResultPage> {
                       const SizedBox(height: 20),
                       ...recommendations.map((rec) => GestureDetector(
                             onTap: () {
+                              final placeId = rec['id'] ?? rec['_id'] ?? '';
+                              final placeName = rec['title'] ?? '제목 없음';
+
+                              if (placeId.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("❌ 장소 정보를 불러올 수 없습니다."),
+                                  ),
+                                );
+                                return;
+                              }
+
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) => DetailPage(
-                                            placeId: rec['id'],
-                                            placeName: rec['title'],
+                                            placeId: placeId,
+                                            placeName: placeName,
                                           )));
                             },
                             child: Container(

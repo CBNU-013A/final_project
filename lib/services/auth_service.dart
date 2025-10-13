@@ -67,4 +67,39 @@ class AuthService {
       return false;
     }
   }
+
+  // 회원탈퇴 API
+  Future<Map<String, dynamic>> deactivate(
+      String userId, String password) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/$userId/deactivate'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"password": password}),
+      );
+
+      debugPrint("🗑️ [회원탈퇴 요청] 서버 응답 코드: ${response.statusCode}");
+      debugPrint("🗑️ [회원탈퇴 요청] 서버 응답 본문: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'success': true,
+          'message': data['message'] ?? '회원탈퇴가 완료되었습니다.',
+        };
+      } else {
+        final data = json.decode(response.body);
+        return {
+          'success': false,
+          'message': data['message'] ?? '회원탈퇴에 실패했습니다.',
+        };
+      }
+    } catch (e) {
+      debugPrint("❌ 회원탈퇴 중 오류: $e");
+      return {
+        'success': false,
+        'message': '네트워크 오류가 발생했습니다.',
+      };
+    }
+  }
 }

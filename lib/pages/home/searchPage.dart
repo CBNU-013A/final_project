@@ -1,11 +1,11 @@
 // pages/home/SearchPage.dart
 import 'dart:io';
-import 'package:final_project/services/location_service.dart';
-import 'package:final_project/services/user_service.dart';
-import 'package:final_project/styles/styles.dart';
+import 'package:pik/services/location_service.dart';
+import 'package:pik/services/user_service.dart';
+import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
-import 'package:final_project/widgets/search_bar.dart' as custom;
-import 'package:final_project/pages/location/detailPage.dart';
+import 'package:pik/widgets/search_bar.dart' as custom;
+import 'package:pik/pages/location/detailPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/BottomNavi.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -30,6 +30,7 @@ class _SearchPageState extends State<SearchPage> {
   List<dynamic> allPlaces = [];
   List<dynamic> filteredPlaces = [];
   List<dynamic> recentsearches = [];
+  bool isLoadingRecentSearches = true;
   final TextEditingController _controller = TextEditingController();
   late SharedPreferences prefs;
 
@@ -65,6 +66,10 @@ class _SearchPageState extends State<SearchPage> {
   void loadRecentSearches() async {
     if (!mounted) return; // ✅ 위젯이 살아있는지 확인
 
+    setState(() {
+      isLoadingRecentSearches = true;
+    });
+
     final placeData = await userService.fetchRecentSearch(userId);
     if (placeData.isNotEmpty) {
       setState(() {
@@ -74,8 +79,12 @@ class _SearchPageState extends State<SearchPage> {
                   'title': item['title'],
                 })
             .toList();
+        isLoadingRecentSearches = false;
       });
     } else {
+      setState(() {
+        isLoadingRecentSearches = false;
+      });
       ("최근 검색 기록 없음");
     }
   }
@@ -85,15 +94,32 @@ class _SearchPageState extends State<SearchPage> {
       filteredPlaces = [];
       return;
     }
-    filteredPlaces = allPlaces
-        .where((place) =>
-            place['title'] != null &&
-            place['title']
-                .toString()
-                .toLowerCase()
-                .contains(query.toLowerCase()))
-        .cast<Map<String, dynamic>>()
-        .toList();
+
+    // 검색어를 소문자로 변환
+    final searchQuery = query.toLowerCase();
+    final List<Map<String, dynamic>> titleMatches = [];
+    final List<Map<String, dynamic>> overviewMatches = [];
+
+    // 1순위: 여행지 이름(title)에서 검색
+    allPlaces.forEach((location) {
+      if (location['title'] != null &&
+          location['title'].toString().toLowerCase().contains(searchQuery)) {
+        titleMatches.add(location);
+      }
+    });
+
+    // 2순위: 소개글(overview)에서 검색 (이미 title에서 매칭된 것 제외)
+    final titleIds = Set.from(titleMatches.map((loc) => loc['_id']));
+    allPlaces.forEach((location) {
+      if (!titleIds.contains(location['_id']) &&
+          location['overview'] != null &&
+          location['overview'].toString().toLowerCase().contains(searchQuery)) {
+        overviewMatches.add(location);
+      }
+    });
+
+    // title 매칭 결과 + overview 매칭 결과
+    filteredPlaces = [...titleMatches, ...overviewMatches];
   }
 
   Widget _buildRecentSearches() {
@@ -138,71 +164,195 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
           const SizedBox(height: 8),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: recentsearches.length,
-            itemBuilder: (context, index) {
-              final place = recentsearches[index];
-              final title = place['title'] ?? '이름 없는 장소';
-              final id = place['_id']?.toString() ?? '';
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+          if (isLoadingRecentSearches)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(color: Colors.grey),
+              ),
+            )
+          else if (recentsearches.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Text(
+                  '최근 검색 기록이 없습니다',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
                 ),
-                child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  title: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close_outlined,
-                        color: Colors.grey, size: 20),
-                    onPressed: () async {
-                      await userService.deleteRecentSearch(userId, id);
-                      final recent =
-                          await userService.fetchRecentSearch(userId);
-                      if (mounted) {
-                        setState(() {
-                          recentsearches = recent;
-                        });
-                      }
-                    },
-                  ),
-                  onTap: () async {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailPage(
-                          placeName: title,
-                          placeId: id,
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.85,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: recentsearches.length,
+              itemBuilder: (context, index) {
+                final place = recentsearches[index];
+                final id = place['_id']?.toString() ?? '';
+
+                // allPlaces에서 전체 장소 정보 찾기
+                final fullPlace = allPlaces.firstWhere(
+                  (loc) => loc['_id'].toString() == id,
+                  orElse: () => place,
+                );
+
+                final imageUrl = fullPlace['firstimage'] ?? '';
+                final title = fullPlace['title'] ?? '이름 없는 장소';
+
+                return Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailPage(
+                              placeName: title,
+                              placeId: id,
+                            ),
+                          ),
+                        );
+                        await userService.deleteRecentSearch(userId, id);
+                        await userService.addRecentSearch(userId, fullPlace);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 이미지
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                              child: imageUrl.isEmpty
+                                  ? Container(
+                                      height: 140,
+                                      width: double.infinity,
+                                      color: Colors.grey[300],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.image_not_supported_outlined,
+                                          color: Colors.grey,
+                                          size: 40,
+                                        ),
+                                      ),
+                                    )
+                                  : Image.network(
+                                      imageUrl,
+                                      height: 140,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          height: 140,
+                                          width: double.infinity,
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.deepGrean,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          height: 140,
+                                          width: double.infinity,
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons
+                                                  .image_not_supported_outlined,
+                                              color: Colors.grey,
+                                              size: 40,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                            // 장소 이름
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                    await userService.deleteRecentSearch(
-                        userId, place['_id'].toString());
-                    await userService.addRecentSearch(userId, place);
-                  },
-                ),
-              );
-            },
-          ),
+                    ),
+                    // 삭제 버튼
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () async {
+                          await userService.deleteRecentSearch(userId, id);
+                          final recent =
+                              await userService.fetchRecentSearch(userId);
+                          if (mounted) {
+                            setState(() {
+                              recentsearches = recent;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
         ],
       ),
     );
@@ -211,150 +361,223 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: allPlaces.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: custom.SearchBar(
-                            controller: _controller,
-                            onChanged: (value) {
-                              filterPlaces(value);
-                              setState(() {});
-                            },
-                            onClear: () {
-                              setState(() {
-                                _controller.clear();
-                                filteredPlaces = [];
-                              });
-                            },
-                            onSubmitted: (query) async {
-                              if (query.isNotEmpty) {
-                                setState(() {
-                                  _controller.clear();
-                                  filterPlaces(query);
-                                });
-                                await userService.addRecentSearch(
-                                    userId, filteredPlaces[0]['_id']);
-                                final recent =
-                                    await userService.fetchRecentSearch(userId);
-                                if (mounted) {
-                                  setState(() {
-                                    recentsearches = recent;
-                                  });
-                                }
-                                await Future.delayed(Duration.zero);
-                                if (!mounted) return;
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: custom.SearchBar(
+                      controller: _controller,
+                      onChanged: (value) {
+                        filterPlaces(value);
+                        setState(() {});
+                      },
+                      onClear: () {
+                        setState(() {
+                          _controller.clear();
+                          filteredPlaces = [];
+                        });
+                      },
+                      onSubmitted: (query) async {
+                        if (query.isNotEmpty) {
+                          setState(() {
+                            _controller.clear();
+                            filterPlaces(query);
+                          });
+                          await userService.addRecentSearch(
+                              userId, filteredPlaces[0]['_id']);
+                          final recent =
+                              await userService.fetchRecentSearch(userId);
+                          if (mounted) {
+                            setState(() {
+                              recentsearches = recent;
+                            });
+                          }
+                          await Future.delayed(Duration.zero);
+                          if (!mounted) return;
 
-                                if (filteredPlaces.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => DetailPage(
-                                        placeName: filteredPlaces[0]['title'],
-                                        placeId:
-                                            filteredPlaces[0]['_id'].toString(),
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('해당 장소가 없어요 😢'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                        if (_controller.text.isNotEmpty)
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _controller.clear();
-                                filteredPlaces = [];
-                                loadRecentSearches();
-                              });
-                            },
-                            child: Text(
-                              '취소',
-                              style: TextStyle(
-                                color: AppColors.deepGrean,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 15,
+                          if (filteredPlaces.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailPage(
+                                  placeName: filteredPlaces[0]['title'],
+                                  placeId: filteredPlaces[0]['_id'].toString(),
+                                ),
                               ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('해당 장소가 없어요 😢'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  // if (_controller.text.isNotEmpty)
+                  //   TextButton(
+                  //     onPressed: () {
+                  //       setState(() {
+                  //         _controller.clear();
+                  //         filteredPlaces = [];
+                  //         loadRecentSearches();
+                  //       });
+                  //     },
+                  //     child: Text(
+                  //       '취소',
+                  //       style: TextStyle(
+                  //         color: AppColors.deepGrean,
+                  //         fontWeight: FontWeight.w500,
+                  //         fontSize: 15,
+                  //       ),
+                  //     ),
+                  //   ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_controller.text.isNotEmpty && filteredPlaces.isNotEmpty)
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: filteredPlaces.length,
+                  itemBuilder: (context, index) {
+                    final place = filteredPlaces[index];
+                    final imageUrl = place['firstimage'] ?? '';
+                    final title = place['title'] ?? '이름 없는 장소';
+
+                    return GestureDetector(
+                      onTap: () async {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailPage(
+                              placeName: title,
+                              placeId: place['_id'].toString(),
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (_controller.text.isNotEmpty &&
-                        filteredPlaces.isNotEmpty)
-                      Container(
+                        );
+                        await userService.deleteRecentSearch(
+                            userId, place['_id'].toString());
+                        await userService.addRecentSearch(userId, place);
+                      },
+                      child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 4,
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: ListView.separated(
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filteredPlaces.length,
-                          separatorBuilder: (context, index) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final place = filteredPlaces[index];
-                            return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 4),
-                              title: Text(
-                                place['title'],
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w500,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 이미지
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                              child: imageUrl.isEmpty
+                                  ? Container(
+                                      height: 140,
+                                      width: double.infinity,
+                                      color: Colors.grey[300],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.image_not_supported_outlined,
+                                          color: Colors.grey,
+                                          size: 40,
+                                        ),
+                                      ),
+                                    )
+                                  : Image.network(
+                                      imageUrl,
+                                      height: 140,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          height: 140,
+                                          width: double.infinity,
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.deepGrean,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          height: 140,
+                                          width: double.infinity,
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons
+                                                  .image_not_supported_outlined,
+                                              color: Colors.grey,
+                                              size: 40,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                            // 장소 이름
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
-                              onTap: () async {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => DetailPage(
-                                      placeName: place['title'],
-                                      placeId: place['_id'].toString(),
-                                    ),
-                                  ),
-                                );
-                                await userService.deleteRecentSearch(
-                                    userId, place['_id'].toString());
-                                await userService.addRecentSearch(
-                                    userId, place);
-                              },
-                            );
-                          },
+                            ),
+                          ],
                         ),
                       ),
-                    if (_controller.text.isEmpty) _buildRecentSearches(),
-                  ],
+                    );
+                  },
                 ),
-              ),
-            ),
+              if (_controller.text.isEmpty) _buildRecentSearches(),
+            ],
+          ),
+        ),
+      ),
       bottomNavigationBar: const BottomNavi(currentIndex: 2),
     );
   }

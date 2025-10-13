@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import '../styles/search.dart';
 import '../styles/styles.dart';
-import 'package:final_project/pages/location/DetailPage.dart';
-import 'package:final_project/pages/home/SearchPage.dart';
+import 'package:pik/pages/location/DetailPage.dart';
+import 'package:pik/pages/home/SearchPage.dart';
 
 class SearchBar extends StatelessWidget {
   final TextEditingController controller;

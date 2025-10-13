@@ -1,12 +1,12 @@
 // pages/recommend/setFeaturesPage.dart
-import 'package:final_project/pages/home/HomePage.dart';
-import 'package:final_project/styles/styles.dart';
-import 'package:final_project/widgets/BottomNavi.dart';
+import 'package:pik/pages/home/HomePage.dart';
+import 'package:pik/styles/styles.dart';
+import 'package:pik/widgets/BottomNavi.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:final_project/pages/recommend/resultPage.dart';
+import 'package:pik/pages/recommend/resultPage.dart';
 
 class FeaturesPage extends StatefulWidget {
   const FeaturesPage({super.key});
@@ -107,12 +107,14 @@ class _FeaturesPageState extends State<FeaturesPage> {
       // 1. features POST (배열로 전달)
       final response = await http.post(
         Uri.parse(
-        'http://localhost:8001/api/users/$userId/keyword-preferences'),
+            'http://localhost:8001/api/users/$userId/keyword-preferences'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({"keywordPreferences": orderedSelections}), // key를 keywordPreferences로 변경
+        body: jsonEncode({
+          "keywordPreferences": orderedSelections
+        }), // key를 keywordPreferences로 변경
       );
       debugPrint('Features POST status: ${response.statusCode}');
       debugPrint('Features POST response: ${response.body}');
@@ -206,7 +208,7 @@ class _FeaturesPageState extends State<FeaturesPage> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.grey))
           : Column(
               children: [
                 Padding(

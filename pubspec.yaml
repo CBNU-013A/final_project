@@ -1,5 +1,5 @@
-name: final_project
-description: "A new Flutter project."
+name: pik
+description: "Pik - 여행 추천 애플리케이션"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -14,7 +14,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
+# In Windows, build-name is used as the major, minorr, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 version: 1.0.0+1
 
@@ -75,6 +75,25 @@ dependency_overrides:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/Logo.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/Logo.png"
+    background_color: "#4CAF50"
+    theme_color: "#4CAF50"
+  windows:
+    generate: true
+    image_path: "assets/Logo.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/Logo.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
