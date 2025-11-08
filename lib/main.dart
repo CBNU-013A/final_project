@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk_template.dart';
 import 'widgets/splashLogo.dart';
 import 'pages/home/HomePage.dart';
+import 'pages/recommend/resultPage.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -101,6 +102,7 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return MaterialApp(
       routes: {
         '/homepage': (context) => const HomePage(), // 🔥 홈 라우트 등록
+        '/recommendation/result': (context) => const ResultPage(),
       },
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       // ✅ 로컬라이제이션 추가

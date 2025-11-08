@@ -1,6 +1,7 @@
 // pages/recommend/RecommendHistoryPage.dart
 import 'package:pik/pages/location/DetailPage.dart';
 import 'package:pik/services/recommendation_service.dart';
+import 'package:pik/services/location_service.dart';
 import 'package:pik/styles/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,10 +15,13 @@ class RecommendHistoryPage extends StatefulWidget {
 
 class _RecommendHistoryPageState extends State<RecommendHistoryPage> {
   final RecommendationService _recommendService = RecommendationService();
+  final LocationService _locationService = LocationService();
 
   bool _isLoading = true;
   List<dynamic> _historyList = [];
   String _errorMessage = '';
+  Map<String, Map<String, dynamic>> _locationDetails = {};
+  Set<String> _loadingLocations = {};
 
   @override
   void initState() {
@@ -266,7 +270,7 @@ class _RecommendHistoryPageState extends State<RecommendHistoryPage> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: Colors.grey[100],
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -333,7 +337,16 @@ class _RecommendHistoryPageState extends State<RecommendHistoryPage> {
             const SizedBox(height: 12),
 
             // 추천 장소 목록
-            ...results.take(3).map((place) => _buildPlaceItem(place)).toList(),
+            ...results.take(3).map((place) {
+              final placeId = place['id'] ?? place['_id'] ?? '';
+              if (placeId.isNotEmpty) {
+                // 빌드 후에 호출하도록 수정
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _fetchLocationDetails(placeId);
+                });
+              }
+              return _buildPlaceItem(place);
+            }).toList(),
 
             if (results.length > 3)
               TextButton(
@@ -416,12 +429,56 @@ class _RecommendHistoryPageState extends State<RecommendHistoryPage> {
     );
   }
 
-  Widget _buildPlaceItem(dynamic place) {
-    final title = place['title'] ?? '이름 없는 장소';
-    final city = place['city'] ?? '';
-    final placeId = place['id'] ?? place['_id'] ?? '';
+  // 장소 상세 정보 가져오기
+  Future<void> _fetchLocationDetails(String locationId) async {
+    if (_locationDetails.containsKey(locationId) ||
+        _loadingLocations.contains(locationId)) {
+      return;
+    }
 
-    return InkWell(
+    setState(() {
+      _loadingLocations.add(locationId);
+    });
+
+    try {
+      final locationData = await _locationService.fetchLocation(locationId);
+      setState(() {
+        _locationDetails[locationId] = locationData;
+      });
+    } catch (error) {
+      debugPrint('❌ 장소 상세 정보 가져오기 실패 ($locationId): $error');
+    } finally {
+      setState(() {
+        _loadingLocations.remove(locationId);
+      });
+    }
+  }
+
+  Widget _buildPlaceItem(dynamic place) {
+    final placeId = place['id'] ?? place['_id'] ?? '';
+    final locationDetail = _locationDetails[placeId];
+
+    // 이미지 URL 가져오기
+    final imageUrl = locationDetail?['firstimage'] ??
+        locationDetail?['firstimage2'] ??
+        place['image'] ??
+        place['firstimage'] ??
+        place['firstimage2'] ??
+        '';
+
+    // 여행지 이름
+    final title = locationDetail?['title'] ?? place['title'] ?? '이름 없는 장소';
+
+    // 주소
+    final address = locationDetail?['address'] ??
+        locationDetail?['addr1'] ??
+        place['address'] ??
+        place['addr1'] ??
+        '주소 정보 없음';
+
+    final isLoadingDetail = _loadingLocations.contains(placeId);
+
+    return GestureDetector(
       onTap: () {
         if (placeId.isNotEmpty) {
           Navigator.push(
@@ -435,44 +492,132 @@ class _RecommendHistoryPageState extends State<RecommendHistoryPage> {
           );
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AppColors.mainGreen,
-                shape: BoxShape.circle,
+            // 사진
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (city.isNotEmpty)
-                    Text(
-                      city,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+              child: imageUrl.isEmpty
+                  ? Container(
+                      width: 120,
+                      height: 120,
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.grey,
+                          size: 40,
+                        ),
                       ),
+                    )
+                  : Image.network(
+                      imageUrl,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 120,
+                          height: 120,
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.deepGrean,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 120,
+                          height: 120,
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              color: Colors.grey,
+                              size: 40,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                ],
-              ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Colors.grey,
+            // 여행지 이름과 주소
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    // 여행지 이름
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    // 주소
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            address,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isLoadingDetail) ...[
+                      const SizedBox(height: 8),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.mainGreen,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -523,7 +668,15 @@ class _RecommendHistoryPageState extends State<RecommendHistoryPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: results.length,
                     itemBuilder: (context, index) {
-                      return _buildPlaceItem(results[index]);
+                      final place = results[index];
+                      final placeId = place['id'] ?? place['_id'] ?? '';
+                      if (placeId.isNotEmpty) {
+                        // 빌드 후에 호출하도록 수정
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _fetchLocationDetails(placeId);
+                        });
+                      }
+                      return _buildPlaceItem(place);
                     },
                   ),
                 ),

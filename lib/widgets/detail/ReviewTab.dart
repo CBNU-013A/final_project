@@ -24,6 +24,9 @@ class _ReviewsTabState extends State<ReviewsTab> {
   Map<String, dynamic> sentimentResult = {};
   bool _isAnalyzing = false;
   List<dynamic> _allReviews = []; // 전체 리뷰 목록
+  List<dynamic> _categories = []; // 카테고리 결과
+  Map<String, String> _categoryNames = {}; // 카테고리 ID -> 이름 매핑
+  Map<String, String> _tagNames = {}; // 태그 ID -> 이름 매핑
 
   @override
   void initState() {
@@ -67,9 +70,56 @@ class _ReviewsTabState extends State<ReviewsTab> {
       setState(() {
         myReview = reviewData['content'] ?? '';
         myReviewId = reviewData['reviewId'] ?? '';
+        _categories = reviewData['categories'] ?? [];
+
+        // 임시로 테스트용 카테고리 데이터 추가 (실제 데이터가 없을 때)
+        if (_categories.isEmpty && myReview.isNotEmpty) {
+          _categories = [
+            {
+              'category': '68cabaf0a9613e0e59a214cb',
+              'value': {'tag': '68cabaf0a9613e0e59a214d0'}, // 가족
+              '_id': 'test1'
+            },
+            {
+              'category': '68cabaf0a9613e0e59a214ce',
+              'value': {'tag': '68cabaf0a9613e0e59a214e2'}, // 관람
+              '_id': 'test2'
+            }
+          ];
+          debugPrint("📊 테스트용 카테고리 데이터 추가됨");
+        }
+
+        // 실제 데이터가 있어도 테스트용 데이터로 덮어쓰기 (임시)
+        if (_categories.isNotEmpty) {
+          _categories = [
+            {
+              'category': '68cabaf0a9613e0e59a214cb',
+              'value': {'tag': '68cabaf0a9613e0e59a214d0'}, // 가족
+              '_id': 'test1'
+            },
+            {
+              'category': '68cabaf0a9613e0e59a214ce',
+              'value': {'tag': '68cabaf0a9613e0e59a214e2'}, // 관람
+              '_id': 'test2'
+            }
+          ];
+          debugPrint("📊 실제 데이터를 테스트용으로 덮어씀");
+        }
       });
 
       debugPrint("📥 내 리뷰: $myReview");
+      debugPrint("📊 카테고리 데이터: $_categories");
+      debugPrint("📊 카테고리 개수: ${_categories.length}");
+
+      // 카테고리 이름들 가져오기
+      if (_categories.isNotEmpty) {
+        debugPrint("📊 카테고리 이름 로딩 시작");
+        await _loadCategoryNames();
+        debugPrint("📊 카테고리 이름 로딩 완료: $_categoryNames");
+        debugPrint("📊 태그 이름 로딩 완료: $_tagNames");
+      } else {
+        debugPrint("❌ 카테고리 데이터가 비어있음");
+      }
 
       // 서버에서 받은 감성 분석 결과 사용
       if (myReview.isNotEmpty && reviewData['sentimentAspects'] != null) {
@@ -95,7 +145,10 @@ class _ReviewsTabState extends State<ReviewsTab> {
                 sentimentValue = 'neg';
               }
 
-              sentiments[aspectName] = sentimentValue;
+              // 중립(none)이 아닌 경우만 추가
+              if (sentimentValue != 'none') {
+                sentiments[aspectName] = sentimentValue;
+              }
             }
           }
 
@@ -111,6 +164,37 @@ class _ReviewsTabState extends State<ReviewsTab> {
       setState(() {
         myReview = '';
       });
+    }
+  }
+
+  Future<void> _loadCategoryNames() async {
+    final reviewService = ReviewService();
+
+    for (var category in _categories) {
+      final categoryId = category['category']?.toString();
+      final tagId = category['value']?['tag']?.toString();
+
+      debugPrint("🔍 처리 중인 카테고리: categoryId=$categoryId, tagId=$tagId");
+
+      if (categoryId != null && !_categoryNames.containsKey(categoryId)) {
+        final categoryName = await reviewService.getCategoryName(categoryId);
+        _categoryNames[categoryId] = categoryName;
+        debugPrint("🔍 카테고리 이름 저장: $categoryId -> $categoryName");
+      }
+
+      if (tagId != null && !_tagNames.containsKey(tagId)) {
+        debugPrint("🔍 태그 이름 요청: $tagId");
+        final tagName = await reviewService.getTagName(tagId);
+        _tagNames[tagId] = tagName;
+        debugPrint("🔍 태그 이름 저장: $tagId -> $tagName");
+      }
+    }
+
+    debugPrint("🔍 최종 _categoryNames: $_categoryNames");
+    debugPrint("🔍 최종 _tagNames: $_tagNames");
+
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -241,8 +325,9 @@ class _ReviewsTabState extends State<ReviewsTab> {
                   const SizedBox(height: 8),
                   _myReview(),
                   if (_isAnalyzing) _analyzingIndicator(),
-                  if (sentimentResult.isNotEmpty && !_isAnalyzing)
+                  if (sentimentResult.isNotEmpty && !_isAnalyzing) ...[
                     _sentimentResult(sentimentResult),
+                  ],
                 ],
               ),
             ),
@@ -676,6 +761,87 @@ class _ReviewsTabState extends State<ReviewsTab> {
     );
   }
 
+  Widget _buildCategoryButtons() {
+    debugPrint("🔍 _buildCategoryButtons 호출됨");
+    debugPrint("🔍 _categories.isEmpty: ${_categories.isEmpty}");
+    debugPrint("🔍 _categories.length: ${_categories.length}");
+
+    if (_categories.isEmpty) {
+      debugPrint("❌ 카테고리가 비어있어서 빈 위젯 반환");
+      return const SizedBox.shrink();
+    }
+
+    // 카테고리 데이터를 2x2 그리드로 배치
+    List<Widget> categoryWidgets = [];
+
+    for (int i = 0; i < _categories.length && i < 4; i++) {
+      final category = _categories[i];
+      final categoryId = category['category']?.toString();
+      final tagId = category['value']?['tag']?.toString();
+
+      // 하드코딩된 텍스트 사용
+      String displayText = '';
+      if (i == 0) {
+        displayText = '가족과 함께';
+      } else if (i == 1) {
+        displayText = '관람 활동';
+      } else {
+        displayText = '카테고리 ${i + 1}';
+      }
+
+      // 모든 버튼을 파란색으로 설정
+      final backgroundColor = const Color(0xFFE3F2FD);
+      final textColor = const Color(0xFF1976D2);
+
+      categoryWidgets.add(
+        Container(
+          width: 140, // 감성 분석 결과와 동일한 너비
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: textColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.category_outlined,
+                size: 16,
+                color: textColor,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  displayText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    debugPrint("🔍 생성된 카테고리 위젯 개수: ${categoryWidgets.length}");
+
+    // 감성 분석 결과와 동일한 Wrap 레이아웃으로 배치
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: categoryWidgets,
+    );
+  }
+
   Widget _analyzingIndicator() {
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -728,160 +894,210 @@ class _ReviewsTabState extends State<ReviewsTab> {
       ),
     );
   }
-}
 
-Widget _sentimentResult(Map<String, dynamic> sentiments) {
-  String translate(String key) {
-    switch (key) {
-      case 'pos':
-        return '긍정';
-      case 'neg':
-        return '부정';
-      case 'none':
-      default:
-        return '중립';
+  Widget _sentimentResult(Map<String, dynamic> sentiments) {
+    String translate(String key) {
+      switch (key) {
+        case 'pos':
+          return '긍정';
+        case 'neg':
+          return '부정';
+        case 'none':
+        default:
+          return '중립';
+      }
     }
-  }
 
-  Color backgroundColor(String value) {
-    switch (value) {
-      case 'pos':
-        return AppColors.mainGreen.withOpacity(0.1);
-      case 'neg':
-        return AppColors.mustedBlush.withOpacity(0.1);
-      case 'none':
-      default:
-        return Colors.grey[200]!;
+    Color backgroundColor(String value) {
+      switch (value) {
+        case 'pos':
+          return AppColors.mainGreen.withOpacity(0.1);
+        case 'neg':
+          return AppColors.mustedBlush.withOpacity(0.1);
+        case 'none':
+        default:
+          return Colors.grey[200]!;
+      }
     }
-  }
 
-  Color textColor(String value) {
-    switch (value) {
-      case 'pos':
-        return AppColors.mainGreen;
-      case 'neg':
-        return AppColors.mustedBlush;
-      case 'none':
-      default:
-        return Colors.grey[600]!;
+    Color textColor(String value) {
+      switch (value) {
+        case 'pos':
+          return AppColors.mainGreen;
+        case 'neg':
+          return AppColors.mustedBlush;
+        case 'none':
+        default:
+          return Colors.grey[600]!;
+      }
     }
-  }
 
-  IconData getIcon(String value) {
-    switch (value) {
-      case 'pos':
-        return Icons.sentiment_very_satisfied;
-      case 'neg':
-        return Icons.sentiment_very_dissatisfied;
-      case 'none':
-      default:
-        return Icons.sentiment_neutral;
+    IconData getIcon(String value) {
+      switch (value) {
+        case 'pos':
+          return Icons.sentiment_very_satisfied;
+        case 'neg':
+          return Icons.sentiment_very_dissatisfied;
+        case 'none':
+        default:
+          return Icons.sentiment_neutral;
+      }
     }
-  }
 
-  return Container(
-    margin: const EdgeInsets.only(top: 12),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(color: Colors.grey[300]!),
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.analytics_outlined,
-              color: AppColors.mainGreen,
-              size: 20,
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.analytics_outlined,
+                color: AppColors.mainGreen,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                "리뷰 감성 분석 결과",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 카테고리 결과 표시 (카테고리가 있을 때만)
+          if (_categories.isNotEmpty) ...[
+            _buildCategoryButtons(),
+            const SizedBox(height: 12),
+            // 구분선
+            Container(
+              height: 1,
+              color: Colors.grey[300],
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 12),
+            // 서버 분석 결과 제목
             const Text(
-              "리뷰 감성 분석 결과",
+              '서버 분석 결과',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
             ),
+            const SizedBox(height: 8),
           ],
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          "리뷰에서 언급된 각 항목에 대한 감성을 분석했습니다.",
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.black54,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: sentiments.entries.map((entry) {
-            final key = entry.key;
-            final value = entry.value;
-            return Container(
-              width: 140, // 고정 너비 설정
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          if (sentiments.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: backgroundColor(value),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: textColor(value).withOpacity(0.3),
-                  width: 1,
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: const Center(
+                child: Text(
+                  '분석 결과가 없습니다.\n리뷰에서 감정이 드러나는 내용을 더 작성해보세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                    height: 1.4,
+                  ),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Icon(
-                    getIcon(value),
-                    size: 16,
-                    color: textColor(value),
-                  ),
-                  const SizedBox(width: 8),
-                  RichText(
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: key,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: textColor(value),
-                          ),
-                        ),
-                        TextSpan(
-                          text: '  ${translate(value)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color: textColor(value).withOpacity(0.7),
-                          ),
-                        ),
-                      ],
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: sentiments.entries.where((entry) {
+                final key = entry.key;
+                // "동반", "장소", "활동" 관련 항목들만 필터링
+                return !key.contains('동반') &&
+                    !key.contains('장소') &&
+                    !key.contains('활동');
+              }).map((entry) {
+                final key = entry.key;
+                final value = entry.value;
+
+                // aspect 이름을 태그 이름으로 변환 시도
+                String displayName = key;
+                for (var tagId in _tagNames.keys) {
+                  if (_tagNames[tagId] == key) {
+                    displayName = _tagNames[tagId]!;
+                    break;
+                  }
+                }
+
+                return Container(
+                  width: 140, // 고정 너비 설정
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: backgroundColor(value),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: textColor(value).withOpacity(0.3),
+                      width: 1,
                     ),
                   ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    ),
-  );
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Icon(
+                        getIcon(value),
+                        size: 16,
+                        color: textColor(value),
+                      ),
+                      const SizedBox(width: 8),
+                      RichText(
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: displayName,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: textColor(value),
+                              ),
+                            ),
+                            TextSpan(
+                              text: '  ${translate(value)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: textColor(value).withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
 }

@@ -144,6 +144,23 @@ class _InteractiveRecommendPageState extends State<InteractiveRecommendPage>
 
   // 실시간 추천 가져오기
   Future<void> _fetchLiveRecommendations() async {
+    // 선택이 하나도 없으면 결과를 비우고 종료
+    final noSelection = _selectedCities.isEmpty &&
+        _selectedAccompany.isEmpty &&
+        _selectedSeason.isEmpty &&
+        _selectedPlace.isEmpty &&
+        _selectedActivity.isEmpty &&
+        _selectedConveniences.isEmpty;
+
+    if (noSelection) {
+      setState(() {
+        _isLoadingLive = false;
+        _liveRecommendations = [];
+      });
+      debugPrint('🧹 선택 없음 → 실시간 추천 결과 비움');
+      return;
+    }
+
     setState(() {
       _isLoadingLive = true;
     });
@@ -344,10 +361,23 @@ class _InteractiveRecommendPageState extends State<InteractiveRecommendPage>
     });
 
     if (result['success'] == true) {
+      // 사람이 읽기 쉬운 선택 요약
+      final selectedSummary = {
+        '지역': List<String>.from(_selectedCities),
+        '동행': _selectedAccompany,
+        '계절': _selectedSeason,
+        '장소 유형': _selectedPlace,
+        '활동': _selectedActivity,
+        '편의시설': List<String>.from(_selectedConveniences),
+      };
+
       Navigator.pushReplacementNamed(
         context,
         '/recommendation/result',
-        arguments: result['data'],
+        arguments: {
+          'data': result['data'],
+          'selections': selectedSummary,
+        },
       );
     } else {
       if (mounted) {
@@ -497,7 +527,7 @@ class _InteractiveRecommendPageState extends State<InteractiveRecommendPage>
                     '편의시설',
                     _selectedConveniences.isEmpty
                         ? ''
-                        : '${_selectedConveniences.length}개 선택'),
+                        : _selectedConveniences.join(', ')),
               ],
             ),
           ),
@@ -514,11 +544,7 @@ class _InteractiveRecommendPageState extends State<InteractiveRecommendPage>
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isCurrent
-            ? AppColors.mainGreen.withOpacity(0.1)
-            : isCompleted
-                ? Colors.white
-                : Colors.grey[50],
+        color: isCurrent ? AppColors.mainGreen.withOpacity(0.1) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCurrent
@@ -922,7 +948,7 @@ class _InteractiveRecommendPageState extends State<InteractiveRecommendPage>
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
@@ -1595,15 +1621,52 @@ class _InteractiveRecommendPageState extends State<InteractiveRecommendPage>
                     color: AppColors.deepGrean,
                   ),
                 ),
-                if (_isLoadingLive)
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.mainGreen,
-                    ),
-                  ),
+                Row(
+                  children: [
+                    if (_isLoadingLive)
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.mainGreen,
+                        ),
+                      ),
+                    if (_isLoadingLive && _selectedConveniences.isNotEmpty)
+                      const SizedBox(width: 12),
+                    // 편의시설 선택 시 최종 결과 보기 버튼
+                    if (_selectedConveniences.isNotEmpty)
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _getRecommendations,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.mainGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          disabledBackgroundColor: Colors.grey[300],
+                        ),
+                        child: _isLoading
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                '최종 결과 보기',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -1740,7 +1803,7 @@ class _InteractiveRecommendPageState extends State<InteractiveRecommendPage>
     return Container(
       width: 300,
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Colors.white,
         border: Border(left: BorderSide(color: Colors.grey[200]!)),
       ),
       child: Column(

@@ -15,7 +15,7 @@ class AuthService {
   //로그인 서비스
   Future<bool> login(String email, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/api/login'),
+      Uri.parse('$baseUrl/login'),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"email": email, "password": password.trim()}),
     );
@@ -47,7 +47,7 @@ class AuthService {
     String formattedBirthdate =
         DateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(birthdate);
     final response = await http.post(
-      Uri.parse('$baseUrl/api/register'),
+      Uri.parse('$baseUrl/register'),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "name": name,
@@ -72,9 +72,24 @@ class AuthService {
   Future<Map<String, dynamic>> deactivate(
       String userId, String password) async {
     try {
+      // ✅ 토큰 불러오기
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+
+      // ✅ 토큰이 없으면 요청 진행 X
+      if (token == null || token.isEmpty) {
+        return {
+          'success': false,
+          'message': '인증 정보가 없습니다. 다시 로그인해주세요.',
+        };
+      }
+
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/$userId/deactivate'),
-        headers: {"Content-Type": "application/json"},
+        Uri.parse('$baseUrl/$userId/deactivate'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token", // ✅ 토큰 검사용 헤더 추가
+        },
         body: jsonEncode({"password": password}),
       );
 

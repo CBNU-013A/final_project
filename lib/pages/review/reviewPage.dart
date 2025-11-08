@@ -33,7 +33,7 @@ class _ReviewWidgetState extends State<ReviewWidget> {
     try {
       final String placeName = Uri.encodeComponent(widget.place);
       final response = await http.get(
-        Uri.parse('$baseUrl/api/location/$placeName'),
+        Uri.parse('$baseUrl/location/$placeName'),
       );
 
       if (response.statusCode == 200) {
@@ -212,7 +212,7 @@ class _ReviewWidgetState extends State<ReviewWidget> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                review ?? '알 수 없음',
+                review ?? '',
                 style: const TextStyle(fontSize: 14),
               ),
             );

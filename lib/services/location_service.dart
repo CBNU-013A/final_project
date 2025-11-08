@@ -10,7 +10,7 @@ final String baseUrl = Platform.isAndroid
 
 class LocationService {
   Future<List<dynamic>> fetchAllLocations() async {
-    final response = await http.get(Uri.parse('$baseUrl/api/location/all'));
+    final response = await http.get(Uri.parse('$baseUrl/location/all'));
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -24,8 +24,7 @@ class LocationService {
       throw Exception('placeId is empty');
     }
 
-    final response =
-        await http.get(Uri.parse('$baseUrl/api/location/id/$placeId'));
+    final response = await http.get(Uri.parse('$baseUrl/location/id/$placeId'));
 
     if (response.statusCode == 200) {
       final body = response.body;

@@ -17,7 +17,7 @@ class RecommendationService {
       debugPrint('🔍 서버 연결 테스트 중...');
       final response = await http
           .get(
-            Uri.parse('$baseUrl/api/recommend/history/test'),
+            Uri.parse('$baseUrl/recommend/history/test'),
           )
           .timeout(const Duration(seconds: 5));
 
@@ -43,7 +43,7 @@ class RecommendationService {
       debugPrint('제한 개수: $limit');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/recommend'),
+        Uri.parse('$baseUrl/recommend'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -86,7 +86,7 @@ class RecommendationService {
       debugPrint('제한 개수: $limit');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/recommend/user/$userId'),
+        Uri.parse('$baseUrl/recommend/user/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -126,7 +126,7 @@ class RecommendationService {
       debugPrint('필터 데이터: $filterData');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/recommend/filter'),
+        Uri.parse('$baseUrl/recommend/filter'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -197,7 +197,7 @@ class RecommendationService {
       debugPrint('📤 전체 payload JSON: ${jsonEncode(payload)}');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/recommend/filter'),
+        Uri.parse('$baseUrl/recommend/filter'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -237,7 +237,7 @@ class RecommendationService {
       debugPrint('사용자 ID: $userId');
 
       final response = await http.get(
-        Uri.parse('$baseUrl/api/recommend/history/$userId'),
+        Uri.parse('$baseUrl/recommend/history/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

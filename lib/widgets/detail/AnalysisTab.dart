@@ -1,5 +1,4 @@
 // widgets/detail/AnalysisTab.dart
-import 'package:pik/pages/review/reviewPage.dart';
 import 'package:flutter/material.dart';
 import 'package:pik/styles/styles.dart';
 
@@ -13,57 +12,6 @@ class AnalysisTab extends StatefulWidget {
 }
 
 class _AnalysisTabState extends State<AnalysisTab> {
-  int _selectedAnalysisIndex = 0;
-  final List<String> _analysisOptions = ['전체', '내 취향'];
-
-  Widget toggleAnalysis() {
-    return Container(
-      height: 35,
-      margin: const EdgeInsets.fromLTRB(0, 10, 0, 10),
-      decoration: BoxDecoration(
-        color: TextFiledStyles.fillColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(_analysisOptions.length, (index) {
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedAnalysisIndex = index;
-              });
-              if (index == 1) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("사용자 취향이 없어요 😢")),
-                );
-              }
-            },
-            child: Container(
-              width: (MediaQuery.of(context).size.width - 80) / 2,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _selectedAnalysisIndex == index
-                    ? AppColors.deepGrean
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _analysisOptions[index],
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: _selectedAnalysisIndex == index
-                      ? Colors.white
-                      : AppColors.deepGrean,
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
   Widget _buildSentimentAnalysis() {
     final aggregatedAnalysis = widget.data['aggregatedAnalysis'];
     if (aggregatedAnalysis == null) {
@@ -77,6 +25,32 @@ class _AnalysisTabState extends State<AnalysisTab> {
     if (sentimentAspects == null || sentimentAspects.isEmpty) {
       return const Center(
         child: Text('감성 분석 데이터가 없습니다.'),
+      );
+    }
+
+    // 동반, 장소, 활동을 제외한 항목들만 필터링
+    final filteredAspects = sentimentAspects.entries
+        .where((entry) => !['동반', '장소', '활동'].contains(entry.key))
+        .toList();
+
+    if (filteredAspects.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: const Center(
+          child: Text(
+            '분석할 수 있는 항목이 없습니다.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+          ),
+        ),
       );
     }
 
@@ -100,7 +74,7 @@ class _AnalysisTabState extends State<AnalysisTab> {
             ),
           ),
           const SizedBox(height: 16),
-          ...sentimentAspects.entries.map((entry) {
+          ...filteredAspects.map((entry) {
             final aspectName = entry.key;
             final sentiment = entry.value as Map<String, dynamic>;
             final pos = sentiment['pos'] ?? 0;
@@ -191,15 +165,10 @@ class _AnalysisTabState extends State<AnalysisTab> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-            child: toggleAnalysis(),
-          ),
-          if (_selectedAnalysisIndex == 0) _buildSentimentAnalysis(),
-          ReviewWidget(place: widget.data['title']),
+          _buildSentimentAnalysis(),
         ],
       ),
     );

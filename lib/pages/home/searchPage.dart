@@ -97,29 +97,34 @@ class _SearchPageState extends State<SearchPage> {
 
     // 검색어를 소문자로 변환
     final searchQuery = query.toLowerCase();
-    final List<Map<String, dynamic>> titleMatches = [];
-    final List<Map<String, dynamic>> overviewMatches = [];
+    final Set<String> matchedIds = {};
+    final List<Map<String, dynamic>> matchedPlaces = [];
 
-    // 1순위: 여행지 이름(title)에서 검색
+    // title과 overview 모두에서 검색
     allPlaces.forEach((location) {
-      if (location['title'] != null &&
-          location['title'].toString().toLowerCase().contains(searchQuery)) {
-        titleMatches.add(location);
+      final locationId = location['_id'].toString();
+
+      // 이미 매칭된 항목은 건너뛰기 (중복 방지)
+      if (matchedIds.contains(locationId)) {
+        return;
+      }
+
+      // title에서 검색어 포함 여부 확인
+      final titleMatch = location['title'] != null &&
+          location['title'].toString().toLowerCase().contains(searchQuery);
+
+      // overview에서 검색어 포함 여부 확인
+      final overviewMatch = location['overview'] != null &&
+          location['overview'].toString().toLowerCase().contains(searchQuery);
+
+      // title 또는 overview 중 하나라도 검색어가 포함되면 결과에 추가
+      if (titleMatch || overviewMatch) {
+        matchedIds.add(locationId);
+        matchedPlaces.add(location);
       }
     });
 
-    // 2순위: 소개글(overview)에서 검색 (이미 title에서 매칭된 것 제외)
-    final titleIds = Set.from(titleMatches.map((loc) => loc['_id']));
-    allPlaces.forEach((location) {
-      if (!titleIds.contains(location['_id']) &&
-          location['overview'] != null &&
-          location['overview'].toString().toLowerCase().contains(searchQuery)) {
-        overviewMatches.add(location);
-      }
-    });
-
-    // title 매칭 결과 + overview 매칭 결과
-    filteredPlaces = [...titleMatches, ...overviewMatches];
+    filteredPlaces = matchedPlaces;
   }
 
   Widget _buildRecentSearches() {
