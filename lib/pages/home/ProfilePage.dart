@@ -8,6 +8,7 @@ import 'package:pik/widgets/profile/MyReviewContainer.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/LoginPage.dart';
+import 'HomePage.dart';
 
 class Profilepage extends StatefulWidget {
   const Profilepage({super.key});
@@ -161,20 +162,31 @@ class _ProfilepageState extends State<Profilepage> {
     if (!mounted) return;
 
     if (result['success'] == true) {
-      // 성공: 로그아웃 처리 후 로그인 페이지로 이동
+      // 성공: 토큰 및 사용자 데이터 삭제
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? '회원탈퇴가 완료되었습니다.'),
-          backgroundColor: AppColors.mainGreen,
+      // ✅ 스낵바 대신 팝업으로 개인정보 삭제 안내 후 메인으로 이동
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('회원탈퇴 완료'),
+          content: const Text('회원탈퇴가 승인되었으며, 개인정보는 모두 삭제되었습니다.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomePage()),
+                  (route) => false,
+                );
+              },
+              child: const Text('확인'),
+            ),
+          ],
         ),
-      );
-
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-        (route) => false,
       );
     } else {
       // 실패: 에러 메시지 표시

@@ -14,7 +14,7 @@ class ReviewService {
       String locationId, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/review/$locationId'),
+        Uri.parse('$baseUrl/review/$locationId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -74,30 +74,40 @@ class ReviewService {
             'content': review['content'],
             'reviewId': review['_id'],
             'sentimentAspects': review['sentimentAspects'] ?? [],
+            'categories': review['categories'] ?? [],
           };
         }
       }
 
-      return {'content': '', 'reviewId': '', 'sentimentAspects': []};
+      return {
+        'content': '',
+        'reviewId': '',
+        'sentimentAspects': [],
+        'categories': []
+      };
     } catch (e) {
       print('❌ 내 리뷰 상세 조회 에러: $e');
-      return {'content': '', 'reviewId': '', 'sentimentAspects': []};
+      return {
+        'content': '',
+        'reviewId': '',
+        'sentimentAspects': [],
+        'categories': []
+      };
     }
   }
 
   // 리뷰 생성
-  Future<bool> createReview(String locationId, String content, String token,
-      {List<String>? categories}) async {
+  Future<bool> createReview(
+      String locationId, String content, String token) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/review/$locationId'),
+        Uri.parse('$baseUrl/review/$locationId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: json.encode({
           'content': content,
-          'categories': categories ?? [],
         }),
       );
 
@@ -118,18 +128,17 @@ class ReviewService {
   }
 
   // 리뷰 수정
-  Future<bool> updateReview(String reviewId, String content, String token,
-      {List<String>? categories}) async {
+  Future<bool> updateReview(
+      String reviewId, String content, String token) async {
     try {
       final response = await http.patch(
-        Uri.parse('$baseUrl/api/review/$reviewId'),
+        Uri.parse('$baseUrl/review/$reviewId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: json.encode({
           'content': content,
-          'categories': categories ?? [],
         }),
       );
 
@@ -152,7 +161,7 @@ class ReviewService {
   Future<bool> deleteReview(String reviewId, String token) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/review/$reviewId'),
+        Uri.parse('$baseUrl/review/$reviewId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -178,7 +187,7 @@ class ReviewService {
   Future<List<dynamic>> getReviewsByUser(String userId, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/review/user/$userId'),
+        Uri.parse('$baseUrl/review/user/$userId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -200,12 +209,146 @@ class ReviewService {
     }
   }
 
+  // 카테고리 이름 가져오기
+  Future<String> getCategoryName(String categoryId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/categories/$categoryId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['name'] ?? _getHardcodedCategoryName(categoryId);
+      } else {
+        return _getHardcodedCategoryName(categoryId);
+      }
+    } catch (e) {
+      print('❌ 카테고리 이름 조회 에러: $e');
+      return _getHardcodedCategoryName(categoryId);
+    }
+  }
+
+  // 하드코딩된 카테고리 이름 매핑
+  String _getHardcodedCategoryName(String categoryId) {
+    switch (categoryId) {
+      case '68cabaf0a9613e0e59a214cb':
+        return '동반';
+      case '68cabaf0a9613e0e59a214cc':
+        return '계절';
+      case '68cabaf0a9613e0e59a214cd':
+        return '시간';
+      case '68cabaf0a9613e0e59a214ce':
+        return '장소';
+      case '68cabaf0a9613e0e59a214cf':
+        return '활동';
+      default:
+        return '알 수 없는 카테고리';
+    }
+  }
+
+  // 태그 이름 가져오기
+  Future<String> getTagName(String tagId) async {
+    try {
+      // 먼저 /tags 엔드포인트 시도
+      var response = await http.get(
+        Uri.parse('$baseUrl/tags/$tagId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('🔍 /tags 응답 데이터: $data');
+        return data['name'] ?? _getHardcodedTagName(tagId);
+      }
+
+      // /tags가 실패하면 /subkeywords 엔드포인트 시도
+      response = await http.get(
+        Uri.parse('$baseUrl/subkeywords/$tagId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('🔍 /subkeywords 응답 데이터: $data');
+        return data['name'] ?? _getHardcodedTagName(tagId);
+      }
+
+      // 둘 다 실패하면 하드코딩된 매핑 사용
+      return _getHardcodedTagName(tagId);
+    } catch (e) {
+      print('❌ 태그 이름 조회 에러: $e');
+      return _getHardcodedTagName(tagId);
+    }
+  }
+
+  // 하드코딩된 태그 이름 매핑
+  String _getHardcodedTagName(String tagId) {
+    print('🔍 하드코딩된 매핑에서 태그 ID: $tagId');
+    switch (tagId) {
+      case '68cabaf0a9613e0e59a214d0':
+        return '가족과 함께';
+      case '68cabaf0a9613e0e59a214d1':
+        return '연인';
+      case '68cabaf0a9613e0e59a214d2':
+        return '친구';
+      case '68cabaf0a9613e0e59a214d3':
+        return '반려동물';
+      case '68cabaf0a9613e0e59a214d4':
+        return '단체';
+      case '68cabaf0a9613e0e59a214d5':
+        return 'none';
+      case '68cabaf0a9613e0e59a214d6':
+        return '봄';
+      case '68cabaf0a9613e0e59a214d7':
+        return '여름';
+      case '68cabaf0a9613e0e59a214d8':
+        return '가을';
+      case '68cabaf0a9613e0e59a214d9':
+        return '겨울';
+      case '68cabaf0a9613e0e59a214da':
+        return '주간';
+      case '68cabaf0a9613e0e59a214db':
+        return '야간';
+      case '68cabaf0a9613e0e59a214dc':
+        return '자연경관';
+      case '68cabaf0a9613e0e59a214dd':
+        return '도시명소';
+      case '68cabaf0a9613e0e59a214de':
+        return '문화역사';
+      case '68cabaf0a9613e0e59a214df':
+        return '상업';
+      case '68cabaf0a9613e0e59a214e0':
+        return '휴양';
+      case '68cabaf0a9613e0e59a214e1':
+        return '탐방';
+      case '68cabaf0a9613e0e59a214e2':
+        return '관람 활동';
+      case '68cabaf0a9613e0e59a214e3':
+        return '참여';
+      case '68cabaf0a9613e0e59a214e4':
+        return '먹거리';
+      case '68cabaf0a9613e0e59a214e5':
+        return '쇼핑';
+      case '68cabaf0a9613e0e59a214e6':
+        return '포토존';
+      default:
+        return '알 수 없음';
+    }
+  }
+
   // 감성 분석만 수행 (리뷰 저장 없이)
   Future<Map<String, dynamic>?> analyzeReview(
       String content, String token) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/review/analyze'),
+        Uri.parse('$baseUrl/review/analyze'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

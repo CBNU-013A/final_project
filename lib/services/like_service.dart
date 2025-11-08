@@ -23,7 +23,7 @@ class LikeService {
   }
 
   Future<bool> addUserLike(String userId, String placeId) async {
-    final url = Uri.parse('$baseUrl/api/users/$userId/likes');
+    final url = Uri.parse('$baseUrl/users/$userId/likes');
     final response = await http.post(
       url,
       body: jsonEncode({"locationId": placeId}),
@@ -33,7 +33,7 @@ class LikeService {
   }
 
   Future<bool> removeUserLike(String userId, String placeId) async {
-    final url = Uri.parse('$baseUrl/api/users/$userId/likes');
+    final url = Uri.parse('$baseUrl/users/$userId/likes');
     final response = await http.delete(
       url,
       body: jsonEncode({"locationId": placeId}),
@@ -52,8 +52,7 @@ class LikeService {
   }
 
   Future<List<dynamic>> loadUserLikePlaces(String userId, String token) async {
-    final response =
-        await http.get(Uri.parse('$baseUrl/api/users/$userId/likes'));
+    final response = await http.get(Uri.parse('$baseUrl/users/$userId/likes'));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['likes'] as List<dynamic>;
@@ -63,7 +62,7 @@ class LikeService {
 
   // Future<List<dynamic>> loadUserLikePlaces(String userId, String token) async {
   //   final response =
-  //       await http.get(Uri.parse('$baseUrl/api/users/$userId/likes'));
+  //       await http.get(Uri.parse('$baseUrl/users/$userId/likes'));
   //   if (response.statusCode == 200) {
   //     final data = json.decode(response.body);
   //     final List<dynamic> likeList = data['likes'];
@@ -85,7 +84,7 @@ class LikeService {
   // }
 
   Future<bool> likeLocation(String placeName, String token) async {
-    final url = Uri.parse('$baseUrl/api/location/$placeName/likes');
+    final url = Uri.parse('$baseUrl/location/$placeName/likes');
     final headers = {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
@@ -96,7 +95,7 @@ class LikeService {
   }
 
   Future<int?> getLocationLikeCount(String placeName, String token) async {
-    final url = Uri.parse('$baseUrl/api/location/$placeName/likes');
+    final url = Uri.parse('$baseUrl/location/$placeName/likes');
     final headers = {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',

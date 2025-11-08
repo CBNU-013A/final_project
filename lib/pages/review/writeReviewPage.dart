@@ -227,21 +227,6 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
           ),
         ),
         actions: [
-          // 감성 분석 버튼
-          TextButton(
-            onPressed: _isAnalyzing ? null : _analyzeSentiment,
-            child: _isAnalyzing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    '분석',
-                    style: TextStyle(color: AppColors.deepGrean),
-                  ),
-          ),
-          const SizedBox(width: 8.0),
           TextButton(
             style: ButtonStyle(
               backgroundColor: MaterialStateProperty.resolveWith<Color>(
@@ -312,49 +297,79 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    if (_sentimentAnalysis!['rawSentiments'] != null)
-                      ...(_sentimentAnalysis!['rawSentiments']
+                    if (_sentimentAnalysis!['rawSentiments'] != null) ...[
+                      if ((_sentimentAnalysis!['rawSentiments']
                               as Map<String, dynamic>)
                           .entries
-                          .map((entry) => Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 2),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      '${entry.key}: ',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
+                          .where((entry) => entry.value != 'none')
+                          .isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '분석 결과가 없습니다.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ...(_sentimentAnalysis!['rawSentiments']
+                                as Map<String, dynamic>)
+                            .entries
+                            .where(
+                                (entry) => entry.value != 'none') // 중립(none) 제외
+                            .map((entry) => Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '${entry.key}: ',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w500),
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: entry.value == 'pos'
-                                            ? Colors.green.withOpacity(0.2)
-                                            : entry.value == 'neg'
-                                                ? Colors.red.withOpacity(0.2)
-                                                : Colors.grey.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        entry.value,
-                                        style: TextStyle(
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
                                           color: entry.value == 'pos'
-                                              ? Colors.green[700]
+                                              ? Colors.green.withOpacity(0.2)
                                               : entry.value == 'neg'
-                                                  ? Colors.red[700]
-                                                  : Colors.grey[700],
-                                          fontWeight: FontWeight.w500,
+                                                  ? Colors.red.withOpacity(0.2)
+                                                  : Colors.grey
+                                                      .withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          entry.value,
+                                          style: TextStyle(
+                                            color: entry.value == 'pos'
+                                                ? Colors.green[700]
+                                                : entry.value == 'neg'
+                                                    ? Colors.red[700]
+                                                    : Colors.grey[700],
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ))
-                          .toList(),
+                                    ],
+                                  ),
+                                ))
+                            .toList(),
+                    ],
                   ],
                 ),
               ),

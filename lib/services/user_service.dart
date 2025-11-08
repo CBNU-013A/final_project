@@ -13,7 +13,7 @@ final String baseUrl = Platform.isAndroid
 class UserService {
   Future<List<String>> fetchUserKeywords(String userId) async {
     final response =
-        await http.get(Uri.parse('$baseUrl/api/users/$userId/keywords'));
+        await http.get(Uri.parse('$baseUrl/users/$userId/keywords'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseBody = json.decode(response.body);
@@ -59,7 +59,7 @@ class UserService {
       String userId, Map<String, dynamic> location) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/users/$userId/recentsearch'),
+        Uri.parse('$baseUrl/users/$userId/recentsearch'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'location': location}),
       );
@@ -80,7 +80,7 @@ class UserService {
   Future<List<Map<String, dynamic>>> fetchRecentSearch(String userId) async {
     try {
       final response =
-          await http.get(Uri.parse('$baseUrl/api/users/$userId/recentsearch'));
+          await http.get(Uri.parse('$baseUrl/users/$userId/recentsearch'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -106,7 +106,7 @@ class UserService {
     try {
       final response = await http.delete(
         Uri.parse(
-            '$baseUrl/api/users/$userId/recentsearch/${locationId.toString()}'),
+            '$baseUrl/users/$userId/recentsearch/${locationId.toString()}'),
       );
 
       if (response.statusCode == 200) {
@@ -126,7 +126,7 @@ class UserService {
   Future<bool> resetRecentSearch(String userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/users/$userId/recentsearch'),
+        Uri.parse('$baseUrl/users/$userId/recentsearch'),
       );
 
       if (response.statusCode == 200) {
@@ -145,7 +145,7 @@ class UserService {
   Future<bool> updateUserKeyword(String userId, String subKeywordId) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/api/users/$userId/keywords'),
+        Uri.parse('$baseUrl/users/$userId/keywords'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'subKeywordId': subKeywordId}),
       );

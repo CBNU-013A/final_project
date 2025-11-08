@@ -5,9 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import 'loginPage.dart';
-import '../onboarding/RandomLocationPage.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:intl/intl.dart';
 import '../../styles/styles.dart';
 import '../../main.dart';
 import 'dart:convert';
@@ -191,29 +189,37 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!mounted) return;
 
     if (success) {
-      rootScaffoldMessengerKey.currentState!.showSnackBar(
-        SnackBarStyles.info("😎 회원가입 성공 !"),
-      );
-
       // ✅ 회원가입 성공 시 SharedPreferences에 저장
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          'userId', emailController.text); // or the actual userId returned
+      await prefs.setString('userId', emailController.text);
       await prefs.setString('userName', nameController.text);
 
-      // 토큰 자동 로그인으로 저장 시도
-      await _loginAndSaveToken(emailController.text, passwordController.text);
+      if (!mounted) return;
 
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .hideCurrentSnackBar(); // ✅ 페이지 이동 전 스낵바 숨기기
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const RandomLocationPage()),
-        );
-      }
+      // ✅ 회원가입 성공 팝업 표시 후 로그인 페이지로 이동
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('회원가입 완료'),
+            content: const Text('회원가입이 완료되었습니다.\n로그인 페이지로 이동합니다.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // 팝업 닫기
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (context) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+                child: const Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
     } else {
       rootScaffoldMessengerKey.currentState!.showSnackBar(
         SnackBarStyles.info("😓 회원가입 실패 !"),

@@ -59,7 +59,7 @@ class _SetKeywordsPageState extends State<SetKeywordsPage> {
   Future<void> _loadKeywords() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/keywords/all'),
+        Uri.parse('$baseUrl/keywords/all'),
       );
 
       if (response.statusCode == 200) {
@@ -92,7 +92,7 @@ class _SetKeywordsPageState extends State<SetKeywordsPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/users/$_userId/keywords'),
+        Uri.parse('$baseUrl/users/$_userId/keywords'),
       );
 
       if (response.statusCode == 200) {
@@ -131,7 +131,7 @@ class _SetKeywordsPageState extends State<SetKeywordsPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/users/$_userId/keywords'),
+        Uri.parse('$baseUrl/users/$_userId/keywords'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "keywordId": keywordId,
@@ -167,7 +167,7 @@ class _SetKeywordsPageState extends State<SetKeywordsPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/users/$_userId/keywords/$keywordId'),
+        Uri.parse('$baseUrl/users/$_userId/keywords/$keywordId'),
         headers: {"Content-Type": "application/json"},
       );
 
@@ -187,7 +187,7 @@ class _SetKeywordsPageState extends State<SetKeywordsPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/users/$_userId/keywords'),
+        Uri.parse('$baseUrl/users/$_userId/keywords'),
         headers: {"Content-Type": "application/json"},
       );
 

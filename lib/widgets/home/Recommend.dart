@@ -1,6 +1,7 @@
 // widgets/home/Recommend.dart
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:pik/services/location_service.dart';
 import 'package:pik/services/user_service.dart';
 import 'package:pik/services/random_location_service.dart';
@@ -12,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pik/pages/location/DetailPage.dart';
 import 'package:pik/pages/onboarding/RandomLocationPage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
 final String baseUrl = Platform.isAndroid
     ? 'http://${dotenv.env['BASE_URL']}:8001'
@@ -33,13 +35,14 @@ class RecommendState extends State<Recommend> {
   final likeService = LikeService();
   List<dynamic> allPlaces = []; // 모든 장소 데이터
 
-  Map<String, dynamic>? _recommendations = {};
+  // Map<String, dynamic>? _recommendations = {};
   bool isLoading = true;
   String userName = "";
   String userId = "";
   String token = "";
   List<String> keywords = [];
   List<dynamic> _randomLocations = [];
+  List<dynamic> _likeRecommendations = [];
 
   List<dynamic> likedPlaces = [];
   bool hasLikes = false;
@@ -65,8 +68,7 @@ class RecommendState extends State<Recommend> {
         token = storedToken;
       });
       loadUserKeywords();
-      loadPlaces();
-      _loadLikes();
+      _loadLikes(); // 좋아요 + 추천 로딩은 _loadLikes 내부에서 트리거
     } else {
       debugPrint("❌ 사용자 정보 없음 (재접속)");
     }
@@ -84,6 +86,13 @@ class RecommendState extends State<Recommend> {
           ..addAll(
               likedPlaces.map((e) => (e['_id'] ?? e['id'] ?? '').toString()));
       });
+      if (hasLikes) {
+        _loadLikeRecommendations();
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('❌ 좋아요 목록 불러오기 실패: $e');
       setState(() {
@@ -103,50 +112,87 @@ class RecommendState extends State<Recommend> {
     }
   }
 
-  void loadPlaces() async {
-    final placeData = await locationService.fetchAllLocations();
-    if (placeData.isNotEmpty) {
-      setState(() {
-        allPlaces = placeData;
-      });
-      loadRecommendations(userId);
-    } else {
-      debugPrint("모든 장소 정보 없음");
-    }
-  }
+  // void loadPlaces() async {
+  //   final placeData = await locationService.fetchAllLocations();
+  //   if (placeData.isNotEmpty) {
+  //     setState(() {
+  //       allPlaces = placeData;
+  //     });
+  //     loadRecommendations(userId);
+  //   } else {
+  //     debugPrint("모든 장소 정보 없음");
+  //   }
+  // }
+  //
+  // void loadRecommendations(String userId) async {
+  //   try {
+  //     final rawResult =
+  //         getRecommendedPlaces(keywords, allPlaces); // ⬅️ score만 포함된 리스트
+  //
+  //     Map<String, dynamic> fullRecommendations = {};
+  //
+  //     for (final place in rawResult) {
+  //       final placeId = place['_id'];
+  //       final placeName = place['title'];
+  //       try {
+  //         final detail = await locationService.fetchLocation(placeName);
+  //
+  //         final merged = Map<String, dynamic>.from(detail);
+  //
+  //         merged['score'] = place['score'];
+  //
+  //         fullRecommendations[placeId] = merged;
+  //       } catch (e) {
+  //         debugPrint("❌ ${place['title']} 상세 정보 불러오기 실패: $e");
+  //       }
+  //     }
+  //
+  //     setState(() {
+  //       _recommendations = fullRecommendations;
+  //       isLoading = false;
+  //     });
+  //     debugPrint("✅ 추천된 장소 수: ${fullRecommendations.length}");
+  //   } catch (e) {
+  //     debugPrint("Error loading recommendations: $e");
+  //
+  //     setState(() {
+  //       isLoading = false;
+  //     });
+  //   }
+  // }
 
-  void loadRecommendations(String userId) async {
+  Future<void> _loadLikeRecommendations() async {
+    if (userId.isEmpty || token.isEmpty) return;
     try {
-      final rawResult =
-          getRecommendedPlaces(keywords, allPlaces); // ⬅️ score만 포함된 리스트
-
-      Map<String, dynamic> fullRecommendations = {};
-
-      for (final place in rawResult) {
-        final placeId = place['_id'];
-        final placeName = place['title'];
-        try {
-          final detail = await locationService.fetchLocation(placeName);
-
-          final merged = Map<String, dynamic>.from(detail);
-
-          merged['score'] = place['score'];
-
-          fullRecommendations[placeId] = merged;
-        } catch (e) {
-          debugPrint("❌ ${place['title']} 상세 정보 불러오기 실패: $e");
-        }
-      }
-
       setState(() {
-        _recommendations = fullRecommendations;
-        isLoading = false;
+        isLoading = true;
       });
-      debugPrint("✅ 추천된 장소 수: ${fullRecommendations.length}");
+      final uri = Uri.parse('$baseUrl/users/$userId/likes/recommendations?limit=20');
+      final resp = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body) as Map<String, dynamic>;
+        final list = (data['recommendations'] as List<dynamic>? ?? []);
+        setState(() {
+          _likeRecommendations = list;
+          isLoading = false;
+        });
+      } else {
+        debugPrint('❌ 좋아요 기반 추천 실패: ${resp.statusCode} ${resp.body}');
+        setState(() {
+          _likeRecommendations = [];
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      debugPrint("Error loading recommendations: $e");
-
+      debugPrint('❌ 좋아요 기반 추천 중 오류: $e');
       setState(() {
+        _likeRecommendations = [];
         isLoading = false;
       });
     }
@@ -284,119 +330,51 @@ class RecommendState extends State<Recommend> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
-            if (_recommendations == null || _recommendations!.isEmpty)
+            if (_likeRecommendations.isEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Icon(
-                      //   Icons.location_off_outlined,
-                      //   size: 48,
-                      //   color: Colors.grey[400],
-                      // ),
-                      // const SizedBox(height: 12),
-                      Text(
-                        "추천된 여행지가 없어요.",
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    "추천된 여행지가 없어요.",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               )
             else
               SizedBox(
-                height: 200,
+                height: 210,
                 width: MediaQuery.of(context).size.width,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _recommendations?.length ?? 0,
+                  itemCount: _likeRecommendations.length,
                   controller: PageController(viewportFraction: 0.85),
                   itemBuilder: (context, index) {
-                    final place = _recommendations!.values.toList()[index];
+                    final place =
+                        Map<String, dynamic>.from(_likeRecommendations[index]);
+                    final pid = (place['_id'] ?? place['id'] ?? '').toString();
+                    final isLiked = _likedIds.contains(pid);
                     return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 8),
-                      child: Container(
-                        height: 171,
-                        width: 160,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.grey,
-                              blurRadius: 4,
-                              offset: Offset(0, 4),
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(15),
-                                  bottom: Radius.circular(15),
-                                ),
-                                child: Image.network(
-                                  place['firstimage'],
-                                  height: 140,
-                                  width: 140,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                    height: 120,
-                                    color: Colors.grey[300],
-                                    child: const Center(
-                                        child: Icon(Icons.broken_image)),
-                                  ),
-                                ),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                      child: _RandomPlaceCard(
+                        place: place,
+                        isLiked: isLiked,
+                        onLike: () => _toggleLike(place),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetailPage(
+                                placeName: (place['title'] ?? '').toString(),
+                                placeId: pid,
                               ),
                             ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16.0, 5, 16.0, 5),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => DetailPage(
-                                              placeName: place['title'],
-                                              placeId: place['_id'].toString(),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Text(
-                                        place['title'] ?? '정보 없음',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: true,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     );
                   },
@@ -449,6 +427,13 @@ class RecommendState extends State<Recommend> {
                       place: place,
                       isLiked: isLiked,
                       onLike: () => _toggleLike(place),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const RandomLocationPage()),
+                        );
+                      },
                     ),
                   );
                 },
@@ -466,10 +451,12 @@ class _RandomPlaceCard extends StatelessWidget {
     required this.place,
     required this.isLiked,
     required this.onLike,
+    required this.onTap,
   });
   final Map<String, dynamic> place;
   final bool isLiked;
   final VoidCallback onLike;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -504,13 +491,7 @@ class _RandomPlaceCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const RandomLocationPage()),
-                      );
-                    },
+                    onTap: onTap,
                     child: Text(
                       (place['title'] ?? '정보 없음').toString(),
                       style: const TextStyle(

@@ -73,7 +73,8 @@ class _InfoTabState extends State<InfoTab> {
           isLoadingNearby = false;
         });
       } else {
-        // 최대 6개만 표시
+        // 랜덤으로 섞어서 6개만 표시
+        nearby.shuffle();
         setState(() {
           nearbyPlaces = nearby.take(6).toList();
           isLoadingNearby = false;

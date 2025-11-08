@@ -8,7 +8,7 @@ class RandomLocationService {
   /// 랜덤 장소 10개 가져오기 (충청도 우선)
   static Future<List<dynamic>> getRandomLocations() async {
     try {
-      final url = Uri.parse('$baseUrl/api/location/random');
+      final url = Uri.parse('$baseUrl/location/random');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {

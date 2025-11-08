@@ -12,7 +12,7 @@ class KeywordService {
 
   //대분류 키워드 조회
   Future<List<Map<String, dynamic>>> getAllKeywords() async {
-    final url = Uri.parse('$baseUrl/api/keywords/all');
+    final url = Uri.parse('$baseUrl/keywords/all');
 
     final response = await http.get(
       url,
@@ -31,7 +31,7 @@ class KeywordService {
 
   //소분류 키워드 조회
   Future<List<Map<String, dynamic>>> getSubKeywords(String categoryId) async {
-    final url = Uri.parse('$baseUrl/api/categories/$categoryId/subkeywords');
+    final url = Uri.parse('$baseUrl/categories/$categoryId/subkeywords');
 
     final response = await http.get(
       url,
@@ -50,7 +50,7 @@ class KeywordService {
   }
 
   Future<List<Map<String, dynamic>>> getCategory() async {
-    final url = Uri.parse('$baseUrl/api/keywords/category');
+    final url = Uri.parse('$baseUrl/keywords/category');
 
     final response = await http.get(
       url,
